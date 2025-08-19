@@ -1,9 +1,7 @@
 package com.fkhrayef.capstone3.Model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -74,8 +72,14 @@ public class Investment {
     @Column(columnDefinition = "INTEGER")
     private Integer minimumInvestmentPeriod;
 
-    private Integer investor_id;
-    private Integer startup_id;
+    // relations
+    @ManyToOne
+    @JsonIgnore
+    private Investor investor;
+
+    @ManyToOne
+    @JsonIgnore
+    private Startup startup;
 
 
     @CreationTimestamp

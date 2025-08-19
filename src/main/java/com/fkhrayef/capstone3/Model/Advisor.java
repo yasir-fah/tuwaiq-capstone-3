@@ -1,9 +1,6 @@
 package com.fkhrayef.capstone3.Model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,6 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -64,6 +62,10 @@ public class Advisor {
     @NotNull(message = "Availability Status is required")
     @Column(columnDefinition = "BOOLEAN")
     private Boolean isAvailable;
+
+    // relation
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "advisor")
+    private Set<AdvisorSession> advisorSessions;
 
 
     @CreationTimestamp

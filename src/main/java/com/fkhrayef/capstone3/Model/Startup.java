@@ -14,6 +14,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -63,6 +64,23 @@ public class Startup {
     @Column(columnDefinition = "VARCHAR(50) NOT NULL")
     // TODO Add Pattern
     private String status;
+
+    // Relations
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "startup")
+    private Set<Founder> founders;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "startup")
+    private Set<Investment> investments;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "startup")
+    private Set<AdvisorSession> advisorSessions;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "startup")
+    private Set<FreelancerProject> freelancerProjects;
+
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "startup")
+    @PrimaryKeyJoinColumn
+    private Subscription subscription;
 
     @CreationTimestamp
     @Column(updatable = false)

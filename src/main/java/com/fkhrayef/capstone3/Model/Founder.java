@@ -1,5 +1,6 @@
 package com.fkhrayef.capstone3.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -48,6 +49,11 @@ public class Founder {
 
     @Column(columnDefinition = "INTEGER DEFAULT 0")
     private Integer aiUsageCount; // TODO should be reset everyday (cron job)
+
+    // relations
+    @ManyToOne
+    @JsonIgnore
+    private Startup startup;
 
     @CreationTimestamp
     @Column(updatable = false)

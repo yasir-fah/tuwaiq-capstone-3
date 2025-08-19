@@ -1,5 +1,6 @@
 package com.fkhrayef.capstone3.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -55,6 +56,15 @@ public class FreelancerProject {
     @NotNull(message = "end date can't be empty")
     @Column(nullable = false)
     private LocalDate endDate;
+
+    // relations
+    @ManyToOne
+    @JsonIgnore
+    private Freelancer freelancer;
+
+    @ManyToOne
+    @JsonIgnore
+    private Startup startup;
 
     @CreationTimestamp
     @Column(updatable = false)

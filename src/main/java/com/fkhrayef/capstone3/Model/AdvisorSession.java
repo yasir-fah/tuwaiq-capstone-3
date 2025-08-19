@@ -1,9 +1,7 @@
 package com.fkhrayef.capstone3.Model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -47,9 +45,14 @@ public class AdvisorSession {
     @Column(columnDefinition = "VARCHAR(2000)")
     private String notes;
 
-    // todo complete the rel
-    private Integer advisor_id;
-    private Integer startup_id;
+    // relations
+    @ManyToOne
+    @JsonIgnore
+    private Advisor advisor;
+
+    @ManyToOne
+    @JsonIgnore
+    private Startup startup;
 
     @CreationTimestamp
     @Column(updatable = false)
