@@ -13,18 +13,19 @@ import org.hibernate.annotations.Check;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Check(constraints = "roundType IN ('pre_seed', 'seed', 'series_a', 'series_b', 'series_c') and " +
-                     "paymentMethod IN('check', 'transfer') and " +
+@Check(constraints = "round_type IN ('pre_seed', 'seed', 'series_a', 'series_b', 'series_c') and " +
+                     "payment_method IN('check', 'transfer') and " +
                      "investment_amount > 0 and " +
-                     "recurringAmount > 0 and " +
-                     "recurringYears > 0 and " +
-                     "minimumInvestmentPeriod > 0")
+                     "recurring_amount > 0 and " +
+                     "recurring_years > 0 and " +
+                     "minimum_investment_period > 0")
 //todo DTO
 public class Investment {
 
@@ -78,8 +79,8 @@ public class Investment {
 
 
     @CreationTimestamp
-    @Column(columnDefinition = "TIMESTAMP")
-    private String createdAt;
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
 
    /* Table InvestmentContract {
