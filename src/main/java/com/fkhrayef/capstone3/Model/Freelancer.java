@@ -33,11 +33,11 @@ public class Freelancer {
 
     @NotEmpty(message = "Email can't be empty")
     @Email(message = "Email should be valid")
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @NotEmpty(message = "phone can't be empty")
-    @Pattern(regexp = "^(\\+9665[0-9]\\d{8})$")
+    @Pattern(regexp = "^(\\+9665[0-9]\\d{8})$", message = "Phone number must be a valid Saudi mobile in the format +9665XXXXXXXX")
     @Column(columnDefinition = "VARCHAR(13)")
     private String phone;
 

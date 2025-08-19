@@ -34,7 +34,7 @@ public class Investor {
 
     @NotEmpty(message = "Email can't be empty")
     @Email(message = "Email should be valid")
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @NotEmpty(message = "name can't be empty")
