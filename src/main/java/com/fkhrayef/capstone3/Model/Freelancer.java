@@ -38,8 +38,8 @@ public class Freelancer {
     private String email;
 
     @NotEmpty(message = "phone can't be empty")
-    @Pattern(regexp = "^(\\+9665[0-9]\\d{8})$", message = "Phone number must be a valid Saudi mobile in the format +9665XXXXXXXX")
-    @Column(columnDefinition = "VARCHAR(13)")
+    @Pattern(regexp = "^\\+9665\\d{8}$", message = "Phone number must be a valid Saudi mobile in the format +9665XXXXXXXX")
+    @Column(columnDefinition = "VARCHAR(13) UNIQUE")
     private String phone;
 
     //todo add pattern underneath:
