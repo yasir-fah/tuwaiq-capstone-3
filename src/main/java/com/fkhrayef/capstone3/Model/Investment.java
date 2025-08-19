@@ -21,9 +21,10 @@ import java.time.LocalDate;
 @Entity
 @Check(constraints = "roundType IN ('pre_seed', 'seed', 'series_a', 'series_b', 'series_c') and " +
                      "paymentMethod IN('check', 'transfer') and " +
-                     "recurringAmount >= 0 and " +
-                     "recurringYears >= 0 and " +
-                     "minimumInvestmentPeriod >= 0")
+                     "investment_amount > 0 and " +
+                     "recurringAmount > 0 and " +
+                     "recurringYears > 0 and " +
+                     "minimumInvestmentPeriod > 0")
 //todo DTO
 public class Investment {
 
