@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -16,6 +17,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Check(constraints = "yearsExperience >= 0")
+@Check(constraints = "rating >= 0")
 public class Freelancer {
 
 
@@ -45,22 +48,22 @@ public class Freelancer {
 
     @NotNull(message = "hourly rate can't be empty")
     @PositiveOrZero(message = "hourly rate should not be negative")
-    @Column(columnDefinition = "int not null")
+    @Column(columnDefinition = "double not null")
     private Double hourlyRate;
 
-    @NotEmpty(message = "availability status of freelancer can't be empty")
+    @NotNull(message = "availability status of freelancer can't be empty")
     @Column(columnDefinition = "boolean not null")
     private Boolean isAvailable = true;
 
     @NotNull(message = "years pf experience can't be empty")
     @PositiveOrZero(message = "years pf experience  should be Zero or Above")
-    @Column(columnDefinition = "int not null check(yearsExperience>=0)")
+    @Column(columnDefinition = "int not null")
     private Integer yearsExperience;
 
 
     @NotNull(message = "rating can't be empty")
     @PositiveOrZero(message = "rating should be positive or Zero")
-    @Column(columnDefinition = "int not null check(rating>=0)")
+    @Column(columnDefinition = "double not null")
     private Double rating;
 
     @CreationTimestamp

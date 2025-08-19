@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Check(constraints = "status IN ('active', 'completed', 'cancelled')")
 public class FreelancerProject {
 
     @Id
@@ -43,7 +45,7 @@ public class FreelancerProject {
 
 
     @Pattern(regexp = "^(active|completed|cancelled)$", message = "status should be active|completed|cancelled")
-    @Column(columnDefinition = "varchar(10)  check(status='active' or status='completed' or status='cancelled')")
+    @Column(columnDefinition = "varchar(10)")
     private String status;
 
     @NotNull(message = "start date can't be empty")
