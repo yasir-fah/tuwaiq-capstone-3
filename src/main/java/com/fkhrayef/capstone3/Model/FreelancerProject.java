@@ -60,7 +60,7 @@ public class FreelancerProject {
     // relations
     @ManyToOne
     @JsonIgnore
-    private Startup freelancer;
+    private Freelancer freelancer;
 
     @ManyToOne
     @JsonIgnore

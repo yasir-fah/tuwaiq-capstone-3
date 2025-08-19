@@ -75,7 +75,7 @@ public class Investment {
     // relations
     @ManyToOne
     @JsonIgnore
-    private Startup investor;
+    private Investor investor;
 
     @ManyToOne
     @JsonIgnore

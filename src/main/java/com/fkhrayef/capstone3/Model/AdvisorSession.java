@@ -48,7 +48,7 @@ public class AdvisorSession {
     // relations
     @ManyToOne
     @JsonIgnore
-    private Startup advisor;
+    private Advisor advisor;
 
     @ManyToOne
     @JsonIgnore
