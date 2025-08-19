@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 @Check(constraints = "status IN ('active', 'expired', 'cancelled')")
 public class Subscription {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(columnDefinition = "VARCHAR(15) NOT NULL")
