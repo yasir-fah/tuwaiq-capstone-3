@@ -46,7 +46,7 @@ public class Subscription {
     @OneToOne
     @MapsId
     @JsonIgnore
-    private Founder founder;
+    private Startup startup;
 
     @CreationTimestamp
     @Column(updatable = false)

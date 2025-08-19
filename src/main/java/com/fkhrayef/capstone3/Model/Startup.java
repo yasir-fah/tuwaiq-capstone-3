@@ -78,6 +78,10 @@ public class Startup {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "startup")
     private Set<FreelancerProject> freelancerProjects;
 
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "startup")
+    @PrimaryKeyJoinColumn
+    private Subscription subscription;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

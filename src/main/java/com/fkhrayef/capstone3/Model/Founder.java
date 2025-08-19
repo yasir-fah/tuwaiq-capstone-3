@@ -55,10 +55,6 @@ public class Founder {
     @JsonIgnore
     private Startup startup;
 
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "founder")
-    @PrimaryKeyJoinColumn
-    private Subscription subscription;
-
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
