@@ -1,0 +1,76 @@
+package com.fkhrayef.capstone3.Model;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+public class Freelancer {
+
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @NotEmpty(message = "name can't be empty")
+    @Size(min = 4, max = 25, message = "name length should be between 4-25 ")
+    @Column(columnDefinition = "varchar(25) not null")
+    private String name;
+
+    @NotEmpty(message = "Email can't be empty")
+    @Email(message = "Email should be valid")
+    @Column(nullable = false)
+    private String email;
+
+    @NotEmpty(message = "phone can't be empty")
+    @Pattern(regexp = "^(\\+9665[0-9]\\d{8})$")
+    @Column(columnDefinition = "VARCHAR(13)")
+    private String phone;
+
+    //todo add pattern underneath:
+    @NotEmpty(message ="specialization can't be empty")
+    @Column(columnDefinition = "varchar(50) not null")
+    private String specialization;
+
+    @NotNull(message = "hourly rate can't be empty")
+    @PositiveOrZero(message = "hourly rate should not be negative")
+    @Column(columnDefinition = "int not null")
+    private Double hourlyRate;
+
+    @NotEmpty(message = "availability status of freelancer can't be empty")
+    @Column(columnDefinition = "boolean not null")
+    private Boolean isAvailable = true;
+
+    @NotNull(message = "years pf experience can't be empty")
+    @PositiveOrZero(message = "years pf experience  should be Zero or Above")
+    @Column(columnDefinition = "int not null check(yearsExperience>=0)")
+    private Integer yearsExperience;
+
+
+    @NotNull(message = "rating can't be empty")
+    @PositiveOrZero(message = "rating should be positive or Zero")
+    @Column(columnDefinition = "int not null check(rating>=0)")
+    private Double rating;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+
+    // todo (one to many relation with freelancerProject.java)
+    // private List<FreelancerProject> freelancerProjects
+
+}
