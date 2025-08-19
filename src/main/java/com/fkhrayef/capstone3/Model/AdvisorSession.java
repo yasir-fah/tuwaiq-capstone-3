@@ -31,8 +31,8 @@ public class AdvisorSession {
 
     // todo this is session_date + start_time, and duration_minutes is the session duration in mins
     @NotNull(message = "Session date and time is required")
-    @Column(columnDefinition = "TIMESTAMP")
-    private LocalDateTime sessionTime;
+    @Column(columnDefinition = "DATETIME")
+    private LocalDateTime startDate;
 
     @NotNull(message = "duration in minutes is required")
     @Positive(message = "Duration must be greater than zero")
@@ -52,10 +52,9 @@ public class AdvisorSession {
     private Integer startup_id;
 
     @CreationTimestamp
-    @Column(columnDefinition = "TIMESTAMP")
+    @Column(updatable = false)
     private LocalDateTime createdAt;
     @UpdateTimestamp
-    @Column(columnDefinition = "TIMESTAMP")
     private LocalDateTime updatedAt;
 
 

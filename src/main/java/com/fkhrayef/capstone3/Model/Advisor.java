@@ -67,7 +67,7 @@ public class Advisor {
 
 
     @CreationTimestamp
-    @Column(columnDefinition = "TIMESTAMP")
+    @Column(updatable = false)
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;

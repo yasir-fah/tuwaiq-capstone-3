@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Check(constraints = "yearsExperience >= 0")
+@Check(constraints = "years_experience >= 0")
 @Check(constraints = "rating >= 0")
 public class Freelancer {
 
@@ -67,8 +67,8 @@ public class Freelancer {
     private Double rating;
 
     @CreationTimestamp
-    private LocalDateTime createdAt = LocalDateTime.now();
-
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 

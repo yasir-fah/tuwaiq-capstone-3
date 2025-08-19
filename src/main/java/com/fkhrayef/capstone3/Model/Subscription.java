@@ -20,8 +20,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Check(constraints = "planType IN ('free', 'pro', 'enterprise')")
-@Check(constraints = "billingCycle IN ('monthly', 'yearly')")
+@Check(constraints = "plan_type IN ('free', 'pro', 'enterprise')")
+@Check(constraints = "billing_cycle IN ('monthly', 'yearly')")
 @Check(constraints = "status IN ('active', 'expired', 'cancelled')")
 public class Subscription {
     @Id

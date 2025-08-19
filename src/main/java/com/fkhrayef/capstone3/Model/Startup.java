@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Check(constraints = "employeeCount >= 0")
+@Check(constraints = "employee_count >= 0")
 @Check(constraints = "valuation >= 0")
 public class Startup {
     @Id
