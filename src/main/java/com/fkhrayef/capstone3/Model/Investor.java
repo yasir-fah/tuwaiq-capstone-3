@@ -12,6 +12,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Setter
 @Getter
@@ -46,6 +47,10 @@ public class Investor {
     @NotEmpty(message = "name can't be empty")
     @Column(columnDefinition = "varchar(255) not null")
     private String investmentFocus;
+
+    // relations
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "investor")
+    private Set<Investment> investments;
 
     @CreationTimestamp
     @Column(updatable = false)

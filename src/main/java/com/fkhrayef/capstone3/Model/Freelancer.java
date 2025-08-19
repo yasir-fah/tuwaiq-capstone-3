@@ -11,6 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Setter
 @Getter
@@ -65,6 +66,10 @@ public class Freelancer {
     @PositiveOrZero(message = "rating should be positive or Zero")
     @Column(columnDefinition = "double not null")
     private Double rating;
+
+    // relations
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "freelancer")
+    private Set<FreelancerProject> freelancerProjects;
 
     @CreationTimestamp
     @Column(updatable = false)
