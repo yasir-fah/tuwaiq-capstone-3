@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Check( constraints = "duration_minutes > 0 and " +
-                      "status IN ('scheduled', 'in_progress', 'completed', 'cancelled')")
+                      "status IN ('scheduled', 'in_progress', 'completed', 'cancelled','rejected','pending')")
 //todo DTO
 public class AdvisorSession {
 
@@ -28,17 +28,15 @@ public class AdvisorSession {
     private Integer id;
 
     // todo this is session_date + start_time, and duration_minutes is the session duration in mins
-    @NotNull(message = "Session date and time is required")
     @Column(columnDefinition = "DATETIME")
     private LocalDateTime startDate;
 
-    @NotNull(message = "duration in minutes is required")
-    @Positive(message = "Duration must be greater than zero")
+
     @Column(columnDefinition = "INTEGER")
     private Integer duration_minutes;
 
     @NotEmpty(message = "Status is required")
-    @Pattern(regexp = "^(?i)(scheduled|in_progress|completed|cancelled)$")
+    @Pattern(regexp = "^(?i)(scheduled|in_progress|completed|cancelled|rejected|pending)$")
     @Column(columnDefinition = "VARCHAR(11)")
     private String status;
 

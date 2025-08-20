@@ -19,7 +19,6 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Check(constraints = "years_experience >= 0")
-@Check(constraints = "rating >= 0")
 public class Freelancer {
 
 
@@ -27,28 +26,23 @@ public class Freelancer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @NotEmpty(message = "name can't be empty")
-    @Size(min = 4, max = 25, message = "name length should be between 4-25 ")
+
     @Column(columnDefinition = "varchar(25) not null")
     private String name;
 
-    @NotEmpty(message = "Email can't be empty")
-    @Email(message = "Email should be valid")
+
     @Column(nullable = false, unique = true)
     private String email;
 
-    @NotEmpty(message = "phone can't be empty")
-    @Pattern(regexp = "^\\+9665\\d{8}$", message = "Phone number must be a valid Saudi mobile in the format +9665XXXXXXXX")
+
     @Column(columnDefinition = "VARCHAR(13) UNIQUE")
     private String phone;
 
-    //todo add pattern underneath:
-    @NotEmpty(message ="specialization can't be empty")
+
     @Column(columnDefinition = "varchar(50) not null")
     private String specialization;
 
-    @NotNull(message = "hourly rate can't be empty")
-    @PositiveOrZero(message = "hourly rate should not be negative")
+
     @Column(columnDefinition = "double not null")
     private Double hourlyRate;
 
@@ -56,16 +50,15 @@ public class Freelancer {
     @Column(columnDefinition = "boolean not null")
     private Boolean isAvailable = true;
 
-    @NotNull(message = "years pf experience can't be empty")
-    @PositiveOrZero(message = "years pf experience  should be Zero or Above")
+
     @Column(columnDefinition = "int not null")
     private Integer yearsExperience;
 
 
-    @NotNull(message = "rating can't be empty")
-    @PositiveOrZero(message = "rating should be positive or Zero")
-    @Column(columnDefinition = "double not null")
-    private Double rating;
+//    @NotNull(message = "rating can't be empty")
+//    @PositiveOrZero(message = "rating should be positive or Zero")
+//    @Column(columnDefinition = "double not null")
+//    private Double rating;
 
     // relations
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "freelancer")
