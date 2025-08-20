@@ -2,10 +2,7 @@ package com.fkhrayef.capstone3.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,20 +30,12 @@ public class Payment {
     @Column(unique = true, nullable = true)
     private String moyasarPaymentId; // From Moyasar API response
     
-    @NotNull(message = "Amount is required")
-    @Positive(message = "Amount must be greater than zero")
     @Column(columnDefinition = "DECIMAL(10,2)")
     private Double amount;
     
-    @NotEmpty(message = "Payment type is required")
-    @Pattern(regexp = "^(freelancer_project|advisor_session|subscription)$", 
-             message = "Payment type must be freelancer_project, advisor_session, or subscription")
     @Column(columnDefinition = "VARCHAR(20)")
     private String paymentType;
     
-    @NotEmpty(message = "Status is required")
-    @Pattern(regexp = "^(initiated|pending|paid|captured|failed|expired|refunded|partially_refunded)$", 
-             message = "Status must be one of: initiated, pending, paid, captured, failed, expired, refunded, partially_refunded")
     @Column(columnDefinition = "VARCHAR(20)")
     private String status;
     

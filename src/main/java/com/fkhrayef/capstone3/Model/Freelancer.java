@@ -1,7 +1,6 @@
 package com.fkhrayef.capstone3.Model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,9 +18,6 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Check(constraints = "years_experience >= 0")
-@Check(constraints = "rating >= 0")
-@Check(constraints = "available_balance >= 0")
-@Check(constraints = "pending_balance >= 0")
 @Check(constraints = "total_earnings >= 0")
 public class Freelancer {
 
@@ -50,7 +46,6 @@ public class Freelancer {
     @Column(columnDefinition = "double not null")
     private Double hourlyRate;
 
-    @NotNull(message = "availability status of freelancer can't be empty")
     @Column(columnDefinition = "boolean not null")
     private Boolean isAvailable = true;
 
@@ -64,16 +59,7 @@ public class Freelancer {
 //    @Column(columnDefinition = "double not null")
 //    private Double rating;
 
-    // Balance management fields
-    @PositiveOrZero(message = "available balance should not be negative")
-    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
-    private Double availableBalance = 0.0;
-
-    @PositiveOrZero(message = "pending balance should not be negative")
-    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
-    private Double pendingBalance = 0.0;
-
-    @PositiveOrZero(message = "total earnings should not be negative")
+    // earnings tracking
     @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
     private Double totalEarnings = 0.0;
 
@@ -86,9 +72,4 @@ public class Freelancer {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-
-    // todo (one to many relation with freelancerProject.java)
-    // private List<FreelancerProject> freelancerProjects
-
 }

@@ -20,8 +20,6 @@ import java.util.Set;
 @Check( constraints = "hourly_rate >= 0 and " +
                       "LENGTH(name) >= 3 and " +
                       "LENGTH(email) >= 3 and " +
-                      "available_balance >= 0 and " +
-                      "pending_balance >= 0 and " +
                       "total_earnings >= 0")
 public class Advisor {
 
@@ -56,12 +54,7 @@ public class Advisor {
     @Column(columnDefinition = "BOOLEAN")
     private Boolean isAvailable;
 
-    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
-    private Double availableBalance = 0.0;
-
-    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
-    private Double pendingBalance = 0.0;
-
+    // earnings tracking
     @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
     private Double totalEarnings = 0.0;
 

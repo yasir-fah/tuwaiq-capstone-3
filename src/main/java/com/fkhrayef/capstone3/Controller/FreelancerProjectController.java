@@ -25,7 +25,7 @@ public class FreelancerProjectController {
         return ResponseEntity.status(200).body(new ApiResponse("project added to startup successfully"));
     }
 
-
+    // TODO rename to "request freelancer"
     @PutMapping("/update/assign/{project_id}/by/{startup_id}/to/{freelance_id}")
     public ResponseEntity<?> assignFreelancerProjectToFreelancer(@PathVariable Integer project_id,
                                                                  @PathVariable Integer startup_id,

@@ -11,8 +11,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
+import org.springframework.scheduling.annotation.Scheduled;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,7 @@ public class PaymentService {
     private final FreelancerProjectRepository freelancerProjectRepository;
     private final AdvisorSessionRepository advisorSessionRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final WhatsappService whatsappService;
 
     @Value("${moyasar.api.key}")
     private String apiKey;
@@ -157,10 +159,7 @@ public class PaymentService {
         
         Payment saved = paymentRepository.save(payment);
         
-        // Update freelancer pending balance immediately (payment in transit)
-        Freelancer freelancer = project.getFreelancer();
-        freelancer.setPendingBalance(freelancer.getPendingBalance() + amount);
-        freelancerRepository.save(freelancer);
+        // Balance will be updated when webhook confirms payment
         
         String transactionUrl = resolveTransactionUrl(moyasarResponse);
         String message = "Payment initiated. Please complete payment using the provided link.";
@@ -228,10 +227,7 @@ public class PaymentService {
         
         Payment saved = paymentRepository.save(payment);
         
-        // Update advisor pending balance immediately (payment in transit)
-        Advisor advisor = session.getAdvisor();
-        advisor.setPendingBalance(advisor.getPendingBalance() + amount);
-        advisorRepository.save(advisor);
+        // Balance will be updated when webhook confirms payment
         
         String transactionUrl = resolveTransactionUrl(moyasarResponse);
         String message = "Payment initiated. Please complete payment using the provided link.";
@@ -330,8 +326,10 @@ public class PaymentService {
             createSubscriptionFromPayment(payment);
         } else if ("freelancer_project".equals(payment.getPaymentType()) && ("paid".equals(newStatus) || "captured".equals(newStatus))) {
             updateFreelancerBalance(payment);
+            activateFreelancerProject(payment);
         } else if ("advisor_session".equals(payment.getPaymentType()) && ("paid".equals(newStatus) || "captured".equals(newStatus))) {
             updateAdvisorBalance(payment);
+            activateAdvisorSession(payment);
         }
     }
     
@@ -389,15 +387,12 @@ public class PaymentService {
     }
     
     /**
-     * Update freelancer balance when project payment is completed
+     * Update freelancer earnings when project payment is completed
      */
     private void updateFreelancerBalance(Payment payment) {
         if (payment.getFreelancerId() != null) {
             Freelancer freelancer = freelancerRepository.findFreelancerById(payment.getFreelancerId());
             if (freelancer != null) {
-                // Move money from pending to available balance
-                freelancer.setPendingBalance(freelancer.getPendingBalance() - payment.getAmount());
-                freelancer.setAvailableBalance(freelancer.getAvailableBalance() + payment.getAmount());
                 freelancer.setTotalEarnings(freelancer.getTotalEarnings() + payment.getAmount());
                 freelancerRepository.save(freelancer);
             }
@@ -405,17 +400,41 @@ public class PaymentService {
     }
     
     /**
-     * Update advisor balance when session payment is completed
+     * Update advisor earnings when session payment is completed
      */
     private void updateAdvisorBalance(Payment payment) {
         if (payment.getAdvisorId() != null) {
             Advisor advisor = advisorRepository.findAdvisorById(payment.getAdvisorId());
             if (advisor != null) {
-                // Move money from pending to available balance
-                advisor.setPendingBalance(advisor.getPendingBalance() - payment.getAmount());
-                advisor.setAvailableBalance(advisor.getAvailableBalance() + payment.getAmount());
                 advisor.setTotalEarnings(advisor.getTotalEarnings() + payment.getAmount());
                 advisorRepository.save(advisor);
+            }
+        }
+    }
+    
+    /**
+     * Activate advisor session after successful payment
+     */
+    private void activateAdvisorSession(Payment payment) {
+        if (payment.getAdvisorSessionId() != null) {
+            AdvisorSession session = advisorSessionRepository.findAdvisorSessionById(payment.getAdvisorSessionId());
+            if (session != null) {
+                session.setStatus("confirmed");
+                advisorSessionRepository.save(session);
+            }
+        }
+    }
+    
+    /**
+     * Activate freelancer project after successful payment
+     */
+    private void activateFreelancerProject(Payment payment) {
+        if (payment.getFreelancerProjectId() != null) {
+            FreelancerProject project = freelancerProjectRepository.findFreelancerProjectById(payment.getFreelancerProjectId());
+            if (project != null) {
+                // Move from 'accepted' to 'active' after payment
+                project.setStatus("active");
+                freelancerProjectRepository.save(project);
             }
         }
     }
@@ -472,5 +491,89 @@ public class PaymentService {
         }
         
         return subscription;
+    }
+    
+    /**
+     * Scheduled task to handle subscription renewals
+     * Runs daily at midnight to check for expired subscriptions
+     */
+    @Scheduled(cron = "0 0 0 * * *") // Daily at midnight
+    public void handleSubscriptionRenewals() {
+        try {
+            // Find all active subscriptions that are expiring today or have expired
+            List<Subscription> expiringSubscriptions = subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
+            
+            for (Subscription subscription : expiringSubscriptions) {
+                try {
+                    processSubscriptionRenewal(subscription);
+                } catch (Exception e) {
+                    // Continue with other subscriptions even if one fails
+                }
+            }
+        } catch (Exception e) {
+            // Renewal job failed, will retry tomorrow
+        }
+    }
+    
+    /**
+     * Process renewal for a single subscription
+     */
+    private void processSubscriptionRenewal(Subscription subscription) {
+        Startup startup = subscription.getStartup();
+        
+        // Mark current subscription as expired
+        subscription.setStatus("expired");
+        subscriptionRepository.save(subscription);
+        
+        // Create automatic renewal payment through Moyasar
+        try {
+            // Create payment request with calculated amount
+            PaymentRequest renewalRequest = new PaymentRequest();
+            renewalRequest.setAmount(subscription.getPrice());
+            renewalRequest.setDescription("Auto-renewal: " + subscription.getPlanType() + " (" + subscription.getBillingCycle() + ")");
+            renewalRequest.setCurrency("SAR");
+            
+            // Process payment through Moyasar to get payment link
+            MoyasarPaymentResponseDTO moyasarResponse = processPayment(renewalRequest);
+            
+            // Create renewal payment record
+            Payment renewalPayment = new Payment();
+            renewalPayment.setAmount(subscription.getPrice());
+            renewalPayment.setPaymentType("subscription");
+            renewalPayment.setStatus(moyasarResponse.getStatus() == null ? "pending" : moyasarResponse.getStatus().toLowerCase());
+            renewalPayment.setCurrency("SAR");
+            renewalPayment.setDescription("Auto-renewal: " + subscription.getPlanType() + " (" + subscription.getBillingCycle() + ")");
+            renewalPayment.setStartup(startup);
+            renewalPayment.setMoyasarPaymentId(moyasarResponse.getId());
+            
+            // Set null for unused reference fields
+            renewalPayment.setFreelancerProjectId(null);
+            renewalPayment.setAdvisorSessionId(null);
+            renewalPayment.setSubscriptionId(null);
+            renewalPayment.setFreelancerId(null);
+            renewalPayment.setAdvisorId(null);
+            
+            paymentRepository.save(renewalPayment);
+            
+            // Send payment link to user via WhatsApp
+            String paymentLink = resolveTransactionUrl(moyasarResponse);
+            String message = "Your subscription has expired. Click here to renew: " + paymentLink;
+            
+            // Get phone from founder (assuming startup has at least one founder)
+            if (startup.getFounders() != null && !startup.getFounders().isEmpty()) {
+                String founderPhone = startup.getFounders().iterator().next().getPhone();
+                whatsappService.sendTextMessage(message, founderPhone);
+            }
+            
+        } catch (Exception e) {
+            // Subscription is still marked as expired even if payment creation fails
+        }
+    }
+    
+    /**
+     * Get all active subscriptions that are expiring soon (within 1 day)
+     */
+    public List<Subscription> getExpiringSubscriptions() {
+        return subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
     }
 }

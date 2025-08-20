@@ -30,6 +30,10 @@ public class AdvisorService {
         advisor.setYearsExperience(advisorDTO.getYearsExperience());
         advisor.setHourlyRate(advisorDTO.getHourlyRate());
         advisor.setIsAvailable(true);
+        
+        // Set default value for earnings
+        advisor.setTotalEarnings(0.0);
+        
         advisorRepository.save(advisor);
     }
 

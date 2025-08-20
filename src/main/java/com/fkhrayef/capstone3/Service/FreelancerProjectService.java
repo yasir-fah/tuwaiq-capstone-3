@@ -63,7 +63,7 @@ public class FreelancerProjectService {
         freelancerProject.setDescription(freelancerProjectDTO.getDescription());
         freelancerProject.setStartDate(freelancerProjectDTO.getStartDate());
         freelancerProject.setEndDate(freelancerProjectDTO.getEndDate());
-        freelancerProject.setStatus("active"); // for now it's active.
+        freelancerProject.setStatus("pending"); // Start as pending, becomes active after payment
         
         // Add pricing fields
         freelancerProject.setEstimatedHours(freelancerProjectDTO.getEstimatedHours());
@@ -175,7 +175,7 @@ public class FreelancerProjectService {
         }
 
         // 5- change project status:
-        project.setStatus("rejected");
+        project.setStatus("pending"); // Reset to pending if rejected
         freelancerProjectRepository.save(project);
     }
 
@@ -215,7 +215,7 @@ public class FreelancerProjectService {
             throw new ApiException("status should be pending to cancel request");
         }
 
-        project.setStatus("cancelled");
+        project.setStatus("pending"); // Reset to pending if cancelled
         freelancerProjectRepository.save(project);
     }
 

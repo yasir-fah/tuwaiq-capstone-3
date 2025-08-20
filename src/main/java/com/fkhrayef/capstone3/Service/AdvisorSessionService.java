@@ -163,7 +163,7 @@ public class AdvisorSessionService {
         }
 
         // change session status:
-        session.setStatus("rejected"); // rejected successfully
+        session.setStatus("pending"); // Reset to pending if rejected
         advisorSessionRepository.save(session);
     }
 
@@ -199,11 +199,11 @@ public class AdvisorSessionService {
         }
 
         // 5- check if status of session still pending:
-        if(!session.getAdvisor().equals("pending")){
+        if(!session.getStatus().equals("pending")){
             throw new ApiException("status should be pending to cancel advising session");
         }
 
-        session.setStatus("cancelled");
+        session.setStatus("pending"); // Reset to pending if cancelled
         advisorSessionRepository.save(session);
     }
 
