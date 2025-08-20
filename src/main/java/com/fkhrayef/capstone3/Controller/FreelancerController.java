@@ -1,6 +1,7 @@
 package com.fkhrayef.capstone3.Controller;
 
 import com.fkhrayef.capstone3.Api.ApiResponse;
+import com.fkhrayef.capstone3.DTOin.FreelancerDTO;
 import com.fkhrayef.capstone3.Model.Freelancer;
 import com.fkhrayef.capstone3.Service.FreelancerService;
 import jakarta.validation.Valid;
@@ -21,14 +22,14 @@ public class FreelancerController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<?> addFreelancer(@Valid @RequestBody Freelancer freelancer) {
+    public ResponseEntity<?> addFreelancer(@Valid @RequestBody FreelancerDTO freelancer) {
         freelancerService.addFreelancer(freelancer);
         return ResponseEntity.status(200).body(new ApiResponse("freelancer added successfully"));
     }
 
     @PutMapping("/update/{freelancer_id}")
     public ResponseEntity<?> updateFreelancer(@PathVariable Integer freelancer_id,
-                                              @Valid @RequestBody Freelancer freelancer) {
+                                              @Valid @RequestBody FreelancerDTO freelancer) {
         freelancerService.updateFreelancer(freelancer_id, freelancer);
         return ResponseEntity.status(200).body(new ApiResponse("freelancer updated successfully"));
     }
@@ -37,5 +38,11 @@ public class FreelancerController {
     public ResponseEntity<?> deleteFreelancer(@PathVariable Integer freelancer_id) {
         freelancerService.deleteFreelancer(freelancer_id);
         return ResponseEntity.status(200).body(new ApiResponse("freelancer delete successfully"));
+    }
+
+    @GetMapping("/get/freelance/{freelance_id}/request/status/{status}")
+    public ResponseEntity<?> getAllFreelancerProjectByStatus(@PathVariable Integer freelance_id,
+                                                             @PathVariable String status){
+        return ResponseEntity.status(200).body(freelancerService.getAllFreelancerProjectByStatus(freelance_id,status));
     }
 }

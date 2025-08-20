@@ -14,9 +14,10 @@ public interface FreelancerProjectRepository extends JpaRepository<FreelancerPro
     @Query("select p from FreelancerProject p where p.startup.id=:startupId")
     List<FreelancerProject> giveMeFreelancerProjectByStartupId(Integer startupId);
 
-    FreelancerProject findFreelancerProjectByProjectNameAndDescription(String projectName, String description);
+    FreelancerProject findFreelancerProjectByProjectNameAndDescriptionAndStartupId(String projectName, String description, Integer startupId);
 
     FreelancerProject findFreelancerProjectById(Integer id);
 
-    Boolean getFreelancerProjectByStartupIs(Startup startup);
+    @Query("select p from FreelancerProject  p where p.freelancer.id=:freelancerId and p.status=:status")
+   List<FreelancerProject> giveMeFreelancerProjectByFreelancerIdAndStatus(Integer freelancerId,String status);
 }
