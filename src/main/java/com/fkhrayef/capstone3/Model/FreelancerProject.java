@@ -34,13 +34,11 @@ public class FreelancerProject {
     // todo (manyToOne) relation with startup.java
     // private Startup startup
 
-    @NotEmpty(message = "project can't be empty")
-    @Size(min = 4, max = 30, message = "project name length between 4-30")
+
     @Column(columnDefinition = "varchar(30) not null")
     private String projectName;
 
-    @NotEmpty(message = "description can't be empty")
-    @Size(min = 4, max = 100, message = "project name length between 4-100")
+
     @Column(columnDefinition = "varchar(100) not null")
     private String description;
 
@@ -49,11 +47,9 @@ public class FreelancerProject {
     @Column(columnDefinition = "varchar(10)")
     private String status;
 
-    @NotNull(message = "start date can't be empty")
     @Column(nullable = false)
     private LocalDate startDate;
 
-    @NotNull(message = "end date can't be empty")
     @Column(nullable = false)
     private LocalDate endDate;
 
