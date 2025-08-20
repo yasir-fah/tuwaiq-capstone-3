@@ -2,6 +2,7 @@ package com.fkhrayef.capstone3.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Check(constraints = "status IN ('active', 'completed', 'cancelled') and " +
+@Check(constraints = "status IN ('active', 'completed', 'pending','rejected','accepted','cancelled') and " +
                     "total_amount >= 0 and " +
                     "estimated_hours >= 0")
 public class FreelancerProject {
@@ -25,12 +26,6 @@ public class FreelancerProject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
-    // todo (manyToOne relation with freelancer.java)
-    // private Freelancer freelancer
-
-    // todo (manyToOne) relation with startup.java
-    // private Startup startup
 
 
     @Column(columnDefinition = "varchar(30) not null")
@@ -41,7 +36,9 @@ public class FreelancerProject {
     private String description;
 
 
-    @Column(columnDefinition = "varchar(10)")
+    @Pattern(regexp = "^(active|completed|pending|rejected|accepted|cancelled)$",
+            message = "status should be active|completed|pending|rejected|accepted|cancelled")
+    @Column(columnDefinition = "varchar(9)")
     private String status;
 
     @Column(nullable = false)
