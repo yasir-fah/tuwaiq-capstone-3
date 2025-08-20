@@ -64,6 +64,9 @@ public class FreelancerProjectService {
         freelancerProject.setStartDate(freelancerProjectDTO.getStartDate());
         freelancerProject.setEndDate(freelancerProjectDTO.getEndDate());
         freelancerProject.setStatus("active"); // for now it's active.
+        
+        // Add pricing fields
+        freelancerProject.setEstimatedHours(freelancerProjectDTO.getEstimatedHours());
 
         // 4- link the project with the startup & save:
         freelancerProject.setStartup(startup);
@@ -150,6 +153,9 @@ public class FreelancerProjectService {
         project.setDescription(dto.getDescription());
         project.setStartDate(dto.getStartDate());
         project.setEndDate(dto.getEndDate());
+        
+        // Update pricing fields
+        project.setEstimatedHours(dto.getEstimatedHours());
 
         // 7- save
         freelancerProjectRepository.save(project);

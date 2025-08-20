@@ -1,7 +1,6 @@
 package com.fkhrayef.capstone3.Model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +19,10 @@ import java.util.Set;
 @Entity
 @Check( constraints = "hourly_rate >= 0 and " +
                       "LENGTH(name) >= 3 and " +
-                      "LENGTH(email) >= 3")
+                      "LENGTH(email) >= 3 and " +
+                      "available_balance >= 0 and " +
+                      "pending_balance >= 0 and " +
+                      "total_earnings >= 0")
 public class Advisor {
 
     @Id
@@ -39,7 +41,6 @@ public class Advisor {
     @Column(columnDefinition = "VARCHAR(13)")
     private String phone;
 
-    @NotEmpty(message = "Expertise Area is required")
     // todo Adding expertiseAreas As a different entity
     @Column(columnDefinition = "VARCHAR(200)")
     private String expertiseArea;
@@ -54,6 +55,15 @@ public class Advisor {
 
     @Column(columnDefinition = "BOOLEAN")
     private Boolean isAvailable;
+
+    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
+    private Double availableBalance = 0.0;
+
+    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
+    private Double pendingBalance = 0.0;
+
+    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
+    private Double totalEarnings = 0.0;
 
     // relation
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "advisor")

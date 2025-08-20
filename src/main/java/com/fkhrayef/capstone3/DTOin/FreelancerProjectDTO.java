@@ -1,8 +1,6 @@
 package com.fkhrayef.capstone3.DTOin;
 
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,6 +27,10 @@ public class FreelancerProjectDTO {
 
     @NotNull(message = "end date can't be empty")
     private LocalDate endDate;
+
+    @NotNull(message = "Estimated hours is required")
+    @PositiveOrZero(message = "Estimated hours should not be negative")
+    private Double estimatedHours;
 
     // could figure the status at the service
 }

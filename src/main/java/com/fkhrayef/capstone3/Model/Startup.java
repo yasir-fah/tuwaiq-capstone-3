@@ -65,6 +65,9 @@ public class Startup {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "startup")
     private Set<FreelancerProject> freelancerProjects;
 
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "startup")
+    private Set<Payment> payments;
+
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "startup")
     @PrimaryKeyJoinColumn
     private Subscription subscription;

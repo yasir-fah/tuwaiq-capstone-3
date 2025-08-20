@@ -19,7 +19,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Check( constraints = "duration_minutes > 0 and " +
-                      "status IN ('scheduled', 'in_progress', 'completed', 'cancelled')")
+                      "status IN ('scheduled', 'in_progress', 'completed', 'cancelled') and " +
+                      "session_cost >= 0")
 //todo DTO
 public class AdvisorSession {
 
@@ -45,6 +46,11 @@ public class AdvisorSession {
     @Column(columnDefinition = "VARCHAR(2000)")
     private String notes;
 
+    // Pricing field
+    @PositiveOrZero(message = "Session cost should not be negative")
+    @Column(columnDefinition = "DECIMAL(10,2)")
+    private Double sessionCost; // Calculated from advisor hourly rate × duration
+
     // relations
     @ManyToOne
     @JsonIgnore
@@ -59,23 +65,4 @@ public class AdvisorSession {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-
-
-
-
-
-
-  /*  Table AdvisorSession {
-        id integer [primary key]
-        advisor_id integer [ref: > Advisor.id]
-        startup_id integer [ref: > Startup.id]
-        session_date date
-        start_time time
-        end_time time
-        status varchar(50) // scheduled, in_progress, completed, cancelled
-        notes text // session notes/summary
-        created_at timestamp
-        updated_at timestamp
-    }*/
 }

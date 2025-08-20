@@ -2,6 +2,7 @@ package com.fkhrayef.capstone3.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 @Check(constraints = "plan_type IN ('free', 'pro', 'enterprise')")
 @Check(constraints = "billing_cycle IN ('monthly', 'yearly')")
 @Check(constraints = "status IN ('active', 'expired', 'cancelled')")
+@Check(constraints = "price >= 0")
 public class Subscription {
     @Id
     private Integer id;
@@ -40,6 +42,11 @@ public class Subscription {
 
     @Column(columnDefinition = "VARCHAR(15)")
     private String status;
+
+    // Pricing field
+    @PositiveOrZero(message = "Price should not be negative")
+    @Column(columnDefinition = "DECIMAL(10,2)")
+    private Double price; // Price for this subscription period
 
     // relations
     @OneToOne
