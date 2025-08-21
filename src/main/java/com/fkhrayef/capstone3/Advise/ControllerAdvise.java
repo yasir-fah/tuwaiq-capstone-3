@@ -94,4 +94,15 @@ public class ControllerAdvise {
         String message = noResourceFoundException.getMessage();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse(message));
     }
+
+    // Generic Exception Handler - catch any unexpected exceptions
+    @ExceptionHandler(value = Exception.class)
+    public ResponseEntity<?> handleGenericException(Exception exception) {
+        // Log the exception for debugging (in production, use proper logging)
+        System.err.println("Unexpected error: " + exception.getMessage());
+        
+        // Return 500 Internal Server Error for unexpected exceptions
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse("An unexpected error occurred. Please try again later."));
+    }
 }
