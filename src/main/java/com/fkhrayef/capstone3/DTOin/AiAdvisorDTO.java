@@ -1,6 +1,7 @@
 package com.fkhrayef.capstone3.DTOin;
 
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AiAdvisorDTO {
 
-    @NotEmpty(message = "prompt can't be empty")
+    @NotBlank(message = "prompt can't be empty")
+    @Size(max = 4000, message = "prompt must not exceed 4000 characters")
     private String prompt;
 }

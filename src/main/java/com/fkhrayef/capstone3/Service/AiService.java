@@ -11,7 +11,6 @@ import java.util.HashMap;
 public class AiService {
 
     private final HashMap<String, String> promptTemplates = new HashMap<>();
-    private String currentTemplate = "";
     private final ChatClient chatClient;
 
     public AiService(ChatClient.Builder chatClientBuilder) {
@@ -221,17 +220,13 @@ public class AiService {
         chatClient = chatClientBuilder.build();
     }
 
-
-    public void setConversation(String template) {
+    public String chat(String template, String message) {
         if (!promptTemplates.containsKey(template)) {
             throw new ApiException("Template not found");
         }
 
-        currentTemplate = promptTemplates.get(template);
-    }
-
-
-    public String chat(String message) {
+        String currentTemplate = promptTemplates.get(template);
+        
         return chatClient
                 .prompt()
                 .system(currentTemplate)

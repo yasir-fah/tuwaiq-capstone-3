@@ -24,7 +24,7 @@ public class PaymentController {
 
     // Simple payment processing
     @PostMapping("/card")
-    public ResponseEntity<MoyasarPaymentResponseDTO> processPayment(@RequestBody PaymentRequest paymentRequest) {
+    public ResponseEntity<MoyasarPaymentResponseDTO> processPayment(@Valid @RequestBody PaymentRequest paymentRequest) {
         MoyasarPaymentResponseDTO response = paymentService.processPayment(paymentRequest);
         return ResponseEntity.ok(response);
     }

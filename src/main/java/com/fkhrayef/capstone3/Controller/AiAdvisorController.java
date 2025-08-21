@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/ai-advisor")
@@ -20,74 +20,68 @@ public class AiAdvisorController {
     private final AiService aiService;
 
     @PostMapping("/validate-idea")
-    public ResponseEntity<?> validateBusinessIdea(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> validateBusinessIdea(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "business_idea_validation");
     }
 
     @PostMapping("/analyze-market")
-    public ResponseEntity<?> analyzeMarket(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> analyzeMarket(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "target_market_analysis");
     }
 
     @PostMapping("/competitive-analysis")
-    public ResponseEntity<?> getCompetitiveAnalysis(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getCompetitiveAnalysis(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "competitive_analysis");
     }
 
     @PostMapping("/revenue-model")
-    public ResponseEntity<?> getRevenueModelAdvice(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getRevenueModelAdvice(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "revenue_model_advice");
     }
 
     @PostMapping("/funding-strategy")
-    public ResponseEntity<?> getFundingStrategy(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getFundingStrategy(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "funding_strategy");
     }
 
     @PostMapping("/financial-planning")
-    public ResponseEntity<?> getFinancialPlanning(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getFinancialPlanning(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "financial_planning");
     }
 
     @PostMapping("/mvp-strategy")
-    public ResponseEntity<?> getMvpStrategy(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getMvpStrategy(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "mvp_strategy");
     }
 
     @PostMapping("/growth-strategy")
-    public ResponseEntity<?> getGrowthStrategy(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getGrowthStrategy(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "growth_strategy");
     }
 
     @PostMapping("/team-building")
-    public ResponseEntity<?> getTeamBuildingAdvice(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getTeamBuildingAdvice(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "team_building");
     }
 
     @PostMapping("/legal-structure")
-    public ResponseEntity<?> getLegalStructure(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getLegalStructure(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "legal_structure");
     }
 
     @PostMapping("/risk-assessment")
-    public ResponseEntity<?> getRiskAssessment(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getRiskAssessment(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "risk_assessment");
     }
 
     @PostMapping("/general-advice")
-    public ResponseEntity<?> getGeneralAdvice(@RequestBody AiAdvisorDTO request) {
+    public ResponseEntity<?> getGeneralAdvice(@Valid @RequestBody AiAdvisorDTO request) {
         return getAdvice(request, "general_startup_advice");
     }
 
     // Single helper method for all endpoints
     private ResponseEntity<?> getAdvice(AiAdvisorDTO request, String template) {
-        try {
-            aiService.setConversation(template);
-            String response = aiService.chat(request.getPrompt());
-
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        }
+        String response = aiService.chat(template, request.getPrompt());
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
