@@ -27,6 +27,9 @@ public class AdvisorSession {
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(columnDefinition = "varchar(50)")
+    private String title;
+
     // todo this is session_date + start_time, and duration_minutes is the session duration in mins
     @Column(columnDefinition = "DATETIME")
     private LocalDateTime startDate;

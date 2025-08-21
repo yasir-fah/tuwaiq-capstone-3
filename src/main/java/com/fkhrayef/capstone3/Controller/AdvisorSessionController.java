@@ -22,10 +22,11 @@ public class AdvisorSessionController {
     }
 
     // 2- startup add new session
-    @PostMapping("/add/to/{startup_id}")
+    @PostMapping("/add/to/{startup_id}/advisor/{advisorId}")
     public ResponseEntity<?> addAdvisorSessionByStartup(@PathVariable("startup_id") Integer startupId,
-                                                        @Valid @RequestBody AdvisorSessionDTO dto) {
-        advisorSessionService.addAdvisorSessionByStartup(startupId, dto);
+                                                        @Valid @RequestBody AdvisorSessionDTO dto,
+                                                        @PathVariable Integer advisorId) {
+        advisorSessionService.addAdvisorSessionByStartup(startupId, dto, advisorId);
         return ResponseEntity.status(200).body(new ApiResponse("advisor session added successfully"));
     }
 
@@ -79,4 +80,18 @@ public class AdvisorSessionController {
         advisorSessionService.deleteAdvisorSession(sessionId, startupId);
         return ResponseEntity.status(200).body(new ApiResponse("session deleted successfully"));
     }
+
+    @PostMapping("/create-meeting/{sessionId}")
+    public ResponseEntity<?> startMeeting(@PathVariable Integer sessionId){
+        advisorSessionService.startMeeting(sessionId);
+        return ResponseEntity.status(200).body(new ApiResponse("Meeting was created successfully, Check your email for the meeting link"));
+    }
+
+    @GetMapping("/get-summary/")
+    public ResponseEntity<?> getSummary(@RequestParam String link){
+        return ResponseEntity.status(200).body(new ApiResponse(advisorSessionService.getSummary(link)));
+    }
+
+
+
 }

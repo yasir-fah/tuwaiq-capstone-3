@@ -4,6 +4,7 @@ import com.fkhrayef.capstone3.Api.ApiException;
 import com.fkhrayef.capstone3.DTOin.AdvisorSessionDTO;
 import com.fkhrayef.capstone3.Model.Advisor;
 import com.fkhrayef.capstone3.Model.AdvisorSession;
+import com.fkhrayef.capstone3.Model.Founder;
 import com.fkhrayef.capstone3.Model.Startup;
 import com.fkhrayef.capstone3.Repository.AdvisorRepository;
 import com.fkhrayef.capstone3.Repository.AdvisorSessionRepository;
@@ -11,6 +12,8 @@ import com.fkhrayef.capstone3.Repository.StartupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,6 +23,8 @@ public class AdvisorSessionService {
     private final AdvisorSessionRepository advisorSessionRepository;
     private final StartupRepository startupRepository;
     private final AdvisorRepository advisorRepository;
+    private final WebexService webexService;
+    private final FirefliesAiApiService firefliesAiApiService;
 
     ///  1- get sessions of one startup
     public List<AdvisorSession> getAllAdvisorSessionsFromStartup(Integer startupId){
@@ -34,12 +39,17 @@ public class AdvisorSessionService {
 
 
    /// 2- startup add new session
-   public void addAdvisorSessionByStartup(Integer startupId, AdvisorSessionDTO dto){
+   public void addAdvisorSessionByStartup(Integer startupId, AdvisorSessionDTO dto, Integer advisorId){
 
         // 1- check if startup exist:
        Startup startup = startupRepository.findStartupById(startupId);
        if(startup == null){
            throw new ApiException("startup not found");
+       }
+
+       Advisor advisor = advisorRepository.findAdvisorById(advisorId);
+       if(advisor == null) {
+           throw new ApiException("advisor not found");
        }
 
        //  2- prevent startup from add duplicate sessions
@@ -53,6 +63,8 @@ public class AdvisorSessionService {
 
        // 3- add the request values:
        AdvisorSession advisorSession = new AdvisorSession();
+       advisorSession.setAdvisor(advisor);
+       advisorSession.setTitle(dto.getTitle());
        advisorSession.setStartDate(dto.getStartDate());
        advisorSession.setDuration_minutes(dto.getDuration_minutes());
        advisorSession.setNotes(dto.getNotes());
@@ -287,5 +299,37 @@ public class AdvisorSessionService {
         // 5- delete session
         advisorSessionRepository.delete(session);
     }
+
+    public void startMeeting(Integer sessionId){
+        AdvisorSession session = advisorSessionRepository.findAdvisorSessionById(sessionId);
+        if (session == null) {
+            throw new ApiException("session not found");
+        }
+        webexService.startMeeting(session.getTitle(), session.getStartDate(), session.getDuration_minutes(),getAllEmails(sessionId));
+    }
+
+    public String getSummary(String meetingLink){
+        return firefliesAiApiService.getMeetingSummary(meetingLink);
+    }
+
+    public List<String> getAllEmails(Integer sessionId){
+        AdvisorSession advisorSession = advisorSessionRepository.findAdvisorSessionById(sessionId);
+        if (advisorSession == null) {
+            throw new ApiException("session not found");
+        }
+        List<String> emails = new ArrayList<>();
+        if (advisorSession.getAdvisor().getEmail() == null){
+            throw new ApiException("advisor email was not found");
+        }
+        emails.add(advisorSession.getAdvisor().getEmail());
+        for (Founder founder : advisorSession.getStartup().getFounders()) {
+            if (founder.getEmail() != null){
+                emails.add(founder.getEmail());
+            }
+        }
+        return emails;
+    }
+
+
 
 }

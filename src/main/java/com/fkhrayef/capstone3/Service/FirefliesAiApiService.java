@@ -24,9 +24,9 @@ public class FirefliesAiApiService {
                 .build();
     }
 
-    public String getMeetingSummary(String meetingLink) {
+    public String getMeetingSummary(String link) {
         // First find the transcript ID, then get the summary - blocking approach
-        String transcriptId = findTranscriptIdByMeetingLink(meetingLink);
+        String transcriptId = findTranscriptIdByMeetingLink(link);
 
         String query = """
         query Transcript($transcriptId: String!) {
@@ -76,6 +76,9 @@ public class FirefliesAiApiService {
                 })
                 .block();
     }
+
+
+
 
     public String findTranscriptIdByMeetingLink(String targetMeetingLink) {
         String query = """
