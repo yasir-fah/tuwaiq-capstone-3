@@ -8,4 +8,7 @@ import org.springframework.stereotype.Repository;
 public interface FounderRepository extends JpaRepository<Founder, Integer> {
 
     Founder findFounderById(Integer id);
+
+    // Fetch a founder by startup id (first one)
+    Founder findFirstByStartup_Id(Integer startupId);
 }

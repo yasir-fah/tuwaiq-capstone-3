@@ -22,7 +22,18 @@ public class FreelancerService {
     }
 
     public void addFreelancer(FreelancerDTO dto) {
-        Freelancer freelancer = new Freelancer(null,dto.getName(), dto.getEmail(),dto.getPhone(),dto.getSpecialization(),dto.getHourlyRate(),true,dto.getYearsExperience(),null,null,null);
+        Freelancer freelancer = new Freelancer();
+        freelancer.setName(dto.getName());
+        freelancer.setEmail(dto.getEmail());
+        freelancer.setPhone(dto.getPhone());
+        freelancer.setSpecialization(dto.getSpecialization());
+        freelancer.setHourlyRate(dto.getHourlyRate());
+        freelancer.setIsAvailable(true);
+        freelancer.setYearsExperience(dto.getYearsExperience());
+        
+        // Set default value for earnings
+        freelancer.setTotalEarnings(0.0);
+        
         freelancerRepository.save(freelancer);
     }
 
@@ -69,12 +80,10 @@ public class FreelancerService {
 
         // 3- validate from status input:
         if(!status.equals("pending")
-                && !status.equals("cancelled")
                 && !status.equals("accepted")
-                && !status.equals("rejected")
                 && !status.equals("active")
                 && !status.equals("completed")){
-            throw new ApiException("status should be active|completed|pending|rejected|accepted|cancelled");
+            throw new ApiException("status should be pending|accepted|active|completed");
         }
 
         // 2- grab freelancer with desired attribute:

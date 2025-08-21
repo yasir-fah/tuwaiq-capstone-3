@@ -1,7 +1,6 @@
 package com.fkhrayef.capstone3.Model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +18,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Check(constraints = "years_experience >= 0")
+@Check(constraints = "total_earnings >= 0")
 public class Freelancer {
 
 
@@ -46,7 +46,6 @@ public class Freelancer {
     @Column(columnDefinition = "double not null")
     private Double hourlyRate;
 
-    @NotNull(message = "availability status of freelancer can't be empty")
     @Column(columnDefinition = "boolean not null")
     private Boolean isAvailable = true;
 
@@ -60,6 +59,10 @@ public class Freelancer {
 //    @Column(columnDefinition = "double not null")
 //    private Double rating;
 
+    // earnings tracking
+    @Column(columnDefinition = "DECIMAL(10,2) DEFAULT 0")
+    private Double totalEarnings = 0.0;
+
     // relations
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "freelancer")
     private Set<FreelancerProject> freelancerProjects;
@@ -69,9 +72,4 @@ public class Freelancer {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-
-    // todo (one to many relation with freelancerProject.java)
-    // private List<FreelancerProject> freelancerProjects
-
 }

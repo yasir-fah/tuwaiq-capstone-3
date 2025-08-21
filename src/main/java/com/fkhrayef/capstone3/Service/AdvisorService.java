@@ -22,7 +22,18 @@ public class AdvisorService {
     public void addAdvisor(AdvisorDTO advisorDTO) {
 
         //sets the DTO values + the isAvailable to true and advisorSessions to null
-        Advisor advisor = new Advisor(null,advisorDTO.getName(),advisorDTO.getEmail(),advisorDTO.getPhone(), advisorDTO.getExpertiseArea(), advisorDTO.getYearsExperience(), advisorDTO.getHourlyRate(), true, null,null,null);
+        Advisor advisor = new Advisor();
+        advisor.setName(advisorDTO.getName());
+        advisor.setEmail(advisorDTO.getEmail());
+        advisor.setPhone(advisorDTO.getPhone());
+        advisor.setExpertiseArea(advisorDTO.getExpertiseArea());
+        advisor.setYearsExperience(advisorDTO.getYearsExperience());
+        advisor.setHourlyRate(advisorDTO.getHourlyRate());
+        advisor.setIsAvailable(true);
+        
+        // Set default value for earnings
+        advisor.setTotalEarnings(0.0);
+        
         advisorRepository.save(advisor);
     }
 
