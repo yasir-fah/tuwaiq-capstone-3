@@ -4,6 +4,7 @@ import com.fkhrayef.capstone3.Api.ApiException;
 import com.fkhrayef.capstone3.DTOin.AdvisorSessionDTO;
 import com.fkhrayef.capstone3.Model.Advisor;
 import com.fkhrayef.capstone3.Model.AdvisorSession;
+import com.fkhrayef.capstone3.Model.Founder;
 import com.fkhrayef.capstone3.Model.Startup;
 import com.fkhrayef.capstone3.Repository.AdvisorRepository;
 import com.fkhrayef.capstone3.Repository.AdvisorSessionRepository;
@@ -11,6 +12,8 @@ import com.fkhrayef.capstone3.Repository.StartupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,6 +23,8 @@ public class AdvisorSessionService {
     private final AdvisorSessionRepository advisorSessionRepository;
     private final StartupRepository startupRepository;
     private final AdvisorRepository advisorRepository;
+    private final WebexService webexService;
+    private final FirefliesAiApiService firefliesAiApiService;
 
     ///  1- get sessions of one startup
     public List<AdvisorSession> getAllAdvisorSessionsFromStartup(Integer startupId){
@@ -59,6 +64,7 @@ public class AdvisorSessionService {
 
        // 4- add the request values:
        AdvisorSession advisorSession = new AdvisorSession();
+       advisorSession.setTitle(dto.getTitle());
        advisorSession.setStartDate(dto.getStartDate());
        advisorSession.setDuration_minutes(dto.getDuration_minutes());
        advisorSession.setNotes(dto.getNotes());
@@ -70,7 +76,7 @@ public class AdvisorSessionService {
        advisorSessionRepository.save(advisorSession);
    }
 
-   /// 4- advisor accepts session:
+   /// 3- advisor accepts session:
     public void advisorAcceptAdvisorSession(Integer advisorId, Integer sessionId){
 
         // 1- check if advisor exist:
@@ -101,7 +107,7 @@ public class AdvisorSessionService {
     }
 
 
-    /// 5- advisor reject session:
+    /// 4- advisor reject session:
     public void advisorRejectAdvisorSession(Integer advisorId, Integer sessionId){
 
         // 1- check if advisor exist:
@@ -132,7 +138,7 @@ public class AdvisorSessionService {
     }
 
 
-    /// 6- allow startup to cancel their request:
+    /// 5- allow startup to cancel their request:
     public void startupCancelAdvisorRequest(Integer startupId, Integer sessionId){
 
         // 1- check if startup exist:
@@ -153,7 +159,7 @@ public class AdvisorSessionService {
             throw new ApiException("session and startup not belong to each other");
         }
 
-        // 5- check if status of session still pending:
+        // 4- check if status of session still pending:
         if(!session.getStatus().equals("pending")){
             throw new ApiException("status should be pending to cancel advising session");
         }
@@ -162,7 +168,7 @@ public class AdvisorSessionService {
         advisorSessionRepository.save(session);
     }
 
-    ///  7- update advisor session;
+    ///  6- update advisor session;
     public void updateAdvisorSession(Integer sessionId, Integer startupId, AdvisorSessionDTO dto) {
 
         // 1- check session exists
@@ -210,7 +216,7 @@ public class AdvisorSessionService {
     }
 
 
-    ///  8- delete advisor session by startup:
+    ///  7- delete advisor session by startup:
     public void deleteAdvisorSession(Integer sessionId, Integer startupId) {
 
         // 1- check session exists
@@ -230,17 +236,49 @@ public class AdvisorSessionService {
             throw new ApiException("session and startup not belong to each other");
         }
 
-        // 4- break relations
+        // 4- check status
+        if (!"pending".equals(session.getStatus())) {
+            throw new ApiException("only pending sessions can be deleted");
+        }
+
+        // 5- break relations
         session.setAdvisor(null);
         session.setStartup(null);
 
-
-         if (!"pending".equals(session.getStatus())) {
-             throw new ApiException("only pending sessions can be deleted");
-         }
-
-        // 5- delete session
+        // 6- delete session
         advisorSessionRepository.delete(session);
     }
+
+    public void startMeeting(Integer sessionId){
+        AdvisorSession session = advisorSessionRepository.findAdvisorSessionById(sessionId);
+        if (session == null) {
+            throw new ApiException("session not found");
+        }
+        webexService.startMeeting(session.getTitle(), session.getStartDate(), session.getDuration_minutes(),getAllEmails(sessionId));
+    }
+
+    public String getSummary(String meetingLink){
+        return firefliesAiApiService.getMeetingSummary(meetingLink);
+    }
+
+    public List<String> getAllEmails(Integer sessionId){
+        AdvisorSession advisorSession = advisorSessionRepository.findAdvisorSessionById(sessionId);
+        if (advisorSession == null) {
+            throw new ApiException("session not found");
+        }
+        List<String> emails = new ArrayList<>();
+        if (advisorSession.getAdvisor().getEmail() == null){
+            throw new ApiException("advisor email was not found");
+        }
+        emails.add(advisorSession.getAdvisor().getEmail());
+        for (Founder founder : advisorSession.getStartup().getFounders()) {
+            if (founder.getEmail() != null){
+                emails.add(founder.getEmail());
+            }
+        }
+        return emails;
+    }
+
+
 
 }
