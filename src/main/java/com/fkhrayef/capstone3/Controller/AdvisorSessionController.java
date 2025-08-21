@@ -70,4 +70,18 @@ public class AdvisorSessionController {
         advisorSessionService.deleteAdvisorSession(sessionId, startupId);
         return ResponseEntity.status(200).body(new ApiResponse("session deleted successfully"));
     }
+
+    @PostMapping("/create-meeting/{sessionId}")
+    public ResponseEntity<?> startMeeting(@PathVariable Integer sessionId){
+        advisorSessionService.startMeeting(sessionId);
+        return ResponseEntity.status(200).body(new ApiResponse("Meeting was created successfully, Check your email for the meeting link"));
+    }
+
+    @GetMapping("/get-summary/")
+    public ResponseEntity<?> getSummary(@RequestParam String link){
+        return ResponseEntity.status(200).body(new ApiResponse(advisorSessionService.getSummary(link)));
+    }
+
+
+
 }
