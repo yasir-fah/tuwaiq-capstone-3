@@ -21,25 +21,16 @@ public class AdvisorSessionController {
         return ResponseEntity.status(200).body(advisorSessionService.getAllAdvisorSessionsFromStartup(startupId));
     }
 
-    // 2- startup add new session
-    @PostMapping("/add/to/{startup_id}/advisor/{advisorId}")
+    // 2- startup create new session with a specific advisor (single step)
+    @PostMapping("/add/to/{startup_id}/with/{advisor_id}")
     public ResponseEntity<?> addAdvisorSessionByStartup(@PathVariable("startup_id") Integer startupId,
-                                                        @Valid @RequestBody AdvisorSessionDTO dto,
-                                                        @PathVariable Integer advisorId) {
-        advisorSessionService.addAdvisorSessionByStartup(startupId, dto, advisorId);
-        return ResponseEntity.status(200).body(new ApiResponse("advisor session added successfully"));
+                                                        @PathVariable("advisor_id") Integer advisorId,
+                                                        @Valid @RequestBody AdvisorSessionDTO dto) {
+        advisorSessionService.addAdvisorSessionByStartup(startupId, advisorId, dto);
+        return ResponseEntity.status(200).body(new ApiResponse("advisor session created and assigned to advisor, pending advisor response"));
     }
 
-    // 3- startup assign session to an advisor
-    @PutMapping("/update/assign/{session_id}/by/{startup_id}/to/{advisor_id}")
-    public ResponseEntity<?> assignAdvisorSessionToAdvisor(@PathVariable("session_id") Integer sessionId,
-                                                           @PathVariable("startup_id") Integer startupId,
-                                                           @PathVariable("advisor_id") Integer advisorId) {
-        advisorSessionService.assignAdvisorSessionToAdvisor(sessionId, startupId, advisorId);
-        return ResponseEntity.status(200).body(new ApiResponse("session assigned to advisor, pending advisor response"));
-    }
-
-    // 4- advisor accepts session
+    // 3- advisor accepts session
     @PutMapping("/update/advisor/{advisor_id}/accept/{session_id}")
     public ResponseEntity<?> advisorAcceptAdvisorSession(@PathVariable("advisor_id") Integer advisorId,
                                                          @PathVariable("session_id") Integer sessionId) {
@@ -47,7 +38,7 @@ public class AdvisorSessionController {
         return ResponseEntity.status(200).body(new ApiResponse("advisor with id:" + advisorId + " accepted session with id:" + sessionId));
     }
 
-    // 5- advisor rejects session
+    // 4- advisor rejects session
     @PutMapping("/update/advisor/{advisor_id}/reject/{session_id}")
     public ResponseEntity<?> advisorRejectAdvisorSession(@PathVariable("advisor_id") Integer advisorId,
                                                          @PathVariable("session_id") Integer sessionId) {
@@ -55,16 +46,15 @@ public class AdvisorSessionController {
         return ResponseEntity.status(200).body(new ApiResponse("advisor with id:" + advisorId + " rejected session with id:" + sessionId));
     }
 
-    // 6- startup cancel their request
-    @PutMapping("/update/startup/{startup_id}/cancel/{session_id}/with/{advisor_id}")
+    // 5- startup cancel their request (no advisor id needed)
+    @PutMapping("/update/startup/{startup_id}/cancel/{session_id}")
     public ResponseEntity<?> startupCancelAdvisorRequest(@PathVariable("startup_id") Integer startupId,
-                                                         @PathVariable("session_id") Integer sessionId,
-                                                         @PathVariable("advisor_id") Integer advisorId) {
-        advisorSessionService.startupCancelAdvisorRequest(startupId, sessionId, advisorId);
+                                                         @PathVariable("session_id") Integer sessionId) {
+        advisorSessionService.startupCancelAdvisorRequest(startupId, sessionId);
         return ResponseEntity.status(200).body(new ApiResponse("session with id:" + sessionId + " cancelled by startup with id:" + startupId));
     }
 
-    // 7- update session (startup)
+    // 6- update session (startup)
     @PutMapping("/update/{session_id}/by/{startup_id}")
     public ResponseEntity<?> updateAdvisorSession(@PathVariable("session_id") Integer sessionId,
                                                   @PathVariable("startup_id") Integer startupId,
@@ -73,7 +63,7 @@ public class AdvisorSessionController {
         return ResponseEntity.status(200).body(new ApiResponse("session updated successfully"));
     }
 
-    // 8- delete session
+    // 7- delete session
     @DeleteMapping("/delete/{session_id}/by/{startup_id}")
     public ResponseEntity<?> deleteAdvisorSession(@PathVariable("session_id") Integer sessionId,
                                                   @PathVariable("startup_id") Integer startupId) {

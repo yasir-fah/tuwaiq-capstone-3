@@ -2,7 +2,7 @@ package com.fkhrayef.capstone3.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,7 +19,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Check( constraints = "duration_minutes > 0 and " +
-                      "status IN ('scheduled', 'in_progress', 'completed', 'cancelled','rejected','pending')")
+                      "status IN ('pending', 'scheduled', 'confirmed', 'in_progress', 'completed') and " +
+                      "session_cost >= 0")
 //todo DTO
 public class AdvisorSession {
 
@@ -38,13 +39,15 @@ public class AdvisorSession {
     @Column(columnDefinition = "INTEGER")
     private Integer duration_minutes;
 
-    @NotEmpty(message = "Status is required")
-    @Pattern(regexp = "^(?i)(scheduled|in_progress|completed|cancelled|rejected|pending)$")
-    @Column(columnDefinition = "VARCHAR(11)")
+    @Column(columnDefinition = "VARCHAR(15)")
     private String status;
 
     @Column(columnDefinition = "VARCHAR(2000)")
     private String notes;
+
+    // Pricing field
+    @Column(columnDefinition = "DECIMAL(10,2)")
+    private Double sessionCost; // Calculated from advisor hourly rate × duration
 
     // relations
     @ManyToOne
@@ -60,23 +63,4 @@ public class AdvisorSession {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-
-
-
-
-
-
-  /*  Table AdvisorSession {
-        id integer [primary key]
-        advisor_id integer [ref: > Advisor.id]
-        startup_id integer [ref: > Startup.id]
-        session_date date
-        start_time time
-        end_time time
-        status varchar(50) // scheduled, in_progress, completed, cancelled
-        notes text // session notes/summary
-        created_at timestamp
-        updated_at timestamp
-    }*/
 }
