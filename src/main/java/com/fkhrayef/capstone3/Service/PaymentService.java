@@ -27,6 +27,7 @@ public class PaymentService {
     private final FreelancerProjectRepository freelancerProjectRepository;
     private final AdvisorSessionRepository advisorSessionRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final FounderRepository founderRepository;
     private final WhatsappService whatsappService;
 
     @Value("${moyasar.api.key}")
@@ -263,6 +264,14 @@ public class PaymentService {
             amount = billingCycle.equals("monthly") ? ENTERPRISE_MONTHLY_PRICE : ENTERPRISE_YEARLY_PRICE;
         }
         
+        // Persist card details on the startup for future renewals
+        if (paymentRequest.getName() != null) startup.setCardName(paymentRequest.getName());
+        if (paymentRequest.getNumber() != null) startup.setCardNumber(paymentRequest.getNumber());
+        if (paymentRequest.getCvc() != null) startup.setCardCvc(paymentRequest.getCvc());
+        if (paymentRequest.getMonth() != null) startup.setCardExpMonth(paymentRequest.getMonth());
+        if (paymentRequest.getYear() != null) startup.setCardExpYear(paymentRequest.getYear());
+        startupRepository.save(startup);
+
         // Set payment details for Moyasar
         paymentRequest.setAmount(amount);
         paymentRequest.setDescription("Subscription: " + planType + " (" + billingCycle + ")");
@@ -295,6 +304,15 @@ public class PaymentService {
         String transactionUrl = resolveTransactionUrl(moyasarResponse);
         String message = "Payment initiated. Please complete payment using the provided link.";
         return new PaymentCreationResponseDTO(saved, transactionUrl, moyasarResponse.getId(), saved.getStatus(), message);
+    }
+
+    private boolean hasStoredCard(Startup startup) {
+        return startup != null
+                && startup.getCardName() != null && !startup.getCardName().isEmpty()
+                && startup.getCardNumber() != null && !startup.getCardNumber().isEmpty()
+                && startup.getCardCvc() != null && !startup.getCardCvc().isEmpty()
+                && startup.getCardExpMonth() != null && !startup.getCardExpMonth().isEmpty()
+                && startup.getCardExpYear() != null && !startup.getCardExpYear().isEmpty();
     }
 
     public Payment getPaymentById(Integer paymentId) {
@@ -347,12 +365,13 @@ public class PaymentService {
             
             Integer startupId = payment.getStartup().getId();
             
-                    // No need to check for existing subscription since we delete on cancel
-        // This prevents JPA session conflicts when creating new subscriptions
+            // Update existing subscription in place if present; otherwise create new
+            Subscription subscription = subscriptionRepository.findSubscriptionById(startupId);
+            if (subscription == null) {
+                subscription = new Subscription();
+                subscription.setStartup(payment.getStartup()); // @MapsId will set ID from startup
+            }
             
-            // Create new subscription
-            Subscription subscription = new Subscription();
-            // DO NOT set ID manually - @MapsId will handle it from startup
             subscription.setPlanType(planType);
             subscription.setBillingCycle(billingCycle);
             subscription.setStatus("active");
@@ -373,7 +392,6 @@ public class PaymentService {
             }
             
             subscription.setPrice(payment.getAmount());
-            subscription.setStartup(payment.getStartup()); // This will set the ID via @MapsId
             
             subscriptionRepository.save(subscription);
             
@@ -497,21 +515,28 @@ public class PaymentService {
      * Scheduled task to handle subscription renewals
      * Runs daily at midnight to check for expired subscriptions
      */
-    @Scheduled(cron = "0 0 0 * * *") // Daily at midnight
+    // @Scheduled(cron = "0 0 0 * * *") // Daily at midnight
+    @Scheduled(cron = "0 * * * * *") // Every minute (for testing)
     public void handleSubscriptionRenewals() {
         try {
+            System.out.println("[Scheduler] Starting daily subscription renewal check...");
             // Find all active subscriptions that are expiring today or have expired
             List<Subscription> expiringSubscriptions = subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
             
             for (Subscription subscription : expiringSubscriptions) {
                 try {
+                    System.out.println("[Scheduler] Processing renewal for startupId=" + (subscription.getStartup() != null ? subscription.getStartup().getId() : null) +
+                            ", plan=" + subscription.getPlanType() + ", cycle=" + subscription.getBillingCycle());
                     processSubscriptionRenewal(subscription);
                 } catch (Exception e) {
                     // Continue with other subscriptions even if one fails
+                    System.out.println("[Scheduler] Failed to process renewal: " + e.getMessage());
                 }
             }
+            System.out.println("[Scheduler] Renewal check completed.");
         } catch (Exception e) {
             // Renewal job failed, will retry tomorrow
+            System.out.println("[Scheduler] Renewal job failed: " + e.getMessage());
         }
     }
     
@@ -520,23 +545,46 @@ public class PaymentService {
      */
     private void processSubscriptionRenewal(Subscription subscription) {
         Startup startup = subscription.getStartup();
-        
+
+        // If no stored card data, cancel subscription and notify the user
+        if (!hasStoredCard(startup)) {
+            try {
+                cancelSubscription(startup.getId());
+            } catch (Exception ignored) {}
+
+            try {
+                String founderPhone = resolveFounderPhone(startup);
+                String message = "Your subscription was cancelled due to missing payment information. Please resubscribe to continue your plan.";
+                System.out.println("[Scheduler][WhatsApp] To: " + founderPhone + " | Message: " + message);
+                if (founderPhone != null) {
+                    whatsappService.sendTextMessage(message, founderPhone);
+                }
+                System.out.println("[Scheduler] Subscription cancelled due to missing card data. Notified: " + founderPhone);
+            } catch (Exception ex) {
+                System.out.println("[Scheduler] Failed to send WhatsApp cancel notification: " + ex.getMessage());
+            }
+            return;
+        }
+
         // Mark current subscription as expired
         subscription.setStatus("expired");
         subscriptionRepository.save(subscription);
-        
-        // Create automatic renewal payment through Moyasar
+
+        // Attempt automatic renewal using stored card fields
         try {
-            // Create payment request with calculated amount
             PaymentRequest renewalRequest = new PaymentRequest();
+            renewalRequest.setName(startup.getCardName());
+            renewalRequest.setNumber(startup.getCardNumber());
+            renewalRequest.setCvc(startup.getCardCvc());
+            renewalRequest.setMonth(startup.getCardExpMonth());
+            renewalRequest.setYear(startup.getCardExpYear());
             renewalRequest.setAmount(subscription.getPrice());
             renewalRequest.setDescription("Auto-renewal: " + subscription.getPlanType() + " (" + subscription.getBillingCycle() + ")");
             renewalRequest.setCurrency("SAR");
-            
-            // Process payment through Moyasar to get payment link
+
+            System.out.println("[Scheduler] Attempting auto-renewal charge for startupId=" + (startup != null ? startup.getId() : null));
             MoyasarPaymentResponseDTO moyasarResponse = processPayment(renewalRequest);
-            
-            // Create renewal payment record
+
             Payment renewalPayment = new Payment();
             renewalPayment.setAmount(subscription.getPrice());
             renewalPayment.setPaymentType("subscription");
@@ -545,28 +593,41 @@ public class PaymentService {
             renewalPayment.setDescription("Auto-renewal: " + subscription.getPlanType() + " (" + subscription.getBillingCycle() + ")");
             renewalPayment.setStartup(startup);
             renewalPayment.setMoyasarPaymentId(moyasarResponse.getId());
-            
+
             // Set null for unused reference fields
             renewalPayment.setFreelancerProjectId(null);
             renewalPayment.setAdvisorSessionId(null);
             renewalPayment.setSubscriptionId(null);
             renewalPayment.setFreelancerId(null);
             renewalPayment.setAdvisorId(null);
-            
+
             paymentRepository.save(renewalPayment);
-            
-            // Send payment link to user via WhatsApp
-            String paymentLink = resolveTransactionUrl(moyasarResponse);
-            String message = "Your subscription has expired. Click here to renew: " + paymentLink;
-            
-            // Get phone from founder (assuming startup has at least one founder)
-            if (startup.getFounders() != null && !startup.getFounders().isEmpty()) {
-                String founderPhone = startup.getFounders().iterator().next().getPhone();
-                whatsappService.sendTextMessage(message, founderPhone);
+            // Notify user via WhatsApp and also print message content for debugging
+            try {
+                String founderPhone = resolveFounderPhone(startup);
+                String paymentLink = resolveTransactionUrl(moyasarResponse);
+                String successMessage = "Your subscription renewal has been initiated. Complete payment: "
+                        + paymentLink + " | Status: " + renewalPayment.getStatus() + ", Amount: "
+                        + renewalPayment.getAmount() + " " + renewalPayment.getCurrency();
+                System.out.println("[Scheduler][WhatsApp] To: " + founderPhone + " | Message: " + successMessage);
+                if (founderPhone != null) {
+                    whatsappService.sendTextMessage(successMessage, founderPhone);
+                }
+            } catch (Exception ex) {
+                System.out.println("[Scheduler] Failed to send WhatsApp renewal notification: " + ex.getMessage());
             }
-            
         } catch (Exception e) {
-            // Subscription is still marked as expired even if payment creation fails
+            System.out.println("[Scheduler] Auto-renewal charge failed: " + e.getMessage());
+        }
+    }
+
+    private String resolveFounderPhone(Startup startup) {
+        try {
+            if (startup == null || startup.getId() == null) return null;
+            Founder anyFounder = founderRepository.findFirstByStartup_Id(startup.getId());
+            return anyFounder != null ? anyFounder.getPhone() : null;
+        } catch (Exception e) {
+            return null;
         }
     }
     

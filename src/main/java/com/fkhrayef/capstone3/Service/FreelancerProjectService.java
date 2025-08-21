@@ -40,8 +40,8 @@ public class FreelancerProjectService {
     }
 
 
-    /// add project by startup:
-    public void addFreelancerProjectByStartup(Integer startupId, FreelancerProjectDTO freelancerProjectDTO){
+    /// add project by startup with a specific freelancer
+    public void addFreelancerProjectByStartup(Integer startupId, Integer freelancerId, FreelancerProjectDTO freelancerProjectDTO){
 
         //1- check if startup exist:
         Startup startup = startupRepository.findStartupById(startupId);
@@ -57,7 +57,13 @@ public class FreelancerProjectService {
             throw new ApiException("there is similar project");
         }
 
-        // 3- add values for the project:
+        // 3- check freelancer exist
+        Freelancer freelancer = freelancerRepository.findFreelancerById(freelancerId);
+        if (freelancer == null) {
+            throw new ApiException("freelancer not found");
+        }
+
+        // 4- add values for the project:
         FreelancerProject freelancerProject = new FreelancerProject();
         freelancerProject.setProjectName(freelancerProjectDTO.getProjectName());
         freelancerProject.setDescription(freelancerProjectDTO.getDescription());
@@ -68,55 +74,12 @@ public class FreelancerProjectService {
         // Add pricing fields
         freelancerProject.setEstimatedHours(freelancerProjectDTO.getEstimatedHours());
 
-        // 4- link the project with the startup & save:
+        // 5- link the project with the startup and freelancer & save:
         freelancerProject.setStartup(startup);
+        freelancerProject.setFreelancer(freelancer);
         freelancerProjectRepository.save(freelancerProject);
 
     }
-
-
-    /// assign project of some startup to freelancer and wait freelancer response
-    public void assignFreelancerProjectToFreelancer(Integer projectId, Integer startupId, Integer freelancerId){
-
-        // 1- check if project exist;
-        FreelancerProject project = freelancerProjectRepository.findFreelancerProjectById(projectId);
-        if(project == null){
-            throw new ApiException("project not found");
-        }
-
-        // 2- check if startup exist:
-        Startup startup = startupRepository.findStartupById(startupId);
-        if(startup == null){
-            throw new ApiException("startup not found");
-        }
-
-        // 3- check if freelancer exist:
-        Freelancer freelancer = freelancerRepository.findFreelancerById(freelancerId);
-        if(freelancer == null){
-            throw new ApiException("freelancer not found");
-        }
-
-        // 4- check if startup own the project:
-        if(project.getStartup() == null || !project.getStartup().getId().equals(startup.getId())){
-            throw new ApiException("project and startup not belong to each other");
-        }
-
-        // 5- check availability of freelancer:
-        if(!freelancer.getIsAvailable()){
-            throw new ApiException("freelancer not available now");
-        }
-
-        //6- check from project status:
-        if(!project.getStatus().equals("pending")){
-            throw new ApiException("can't assign non-pending project");
-        }
-
-        // 7- link & save:
-        // project.setStatus("pending"); // (status already 'pending')
-        project.setFreelancer(freelancer);
-        freelancerProjectRepository.save(project);
-    }
-
 
     /// make the freelancer accepts the project:
     public void freelancerAcceptFreelancerProject(Integer freelanceId, Integer projectId){
@@ -175,13 +138,13 @@ public class FreelancerProjectService {
         }
 
         // 5- change project status:
-        project.setStatus("pending"); // Reset to pending if rejected
+        project.setStatus("rejected");
         freelancerProjectRepository.save(project);
     }
 
 
     /// allow the startup to cancel request & break relation with freelance:
-    public void startupCancelFreelanceRequest(Integer startupId, Integer projectId, Integer freelanceId){
+    public void startupCancelFreelanceRequest(Integer startupId, Integer projectId){
 
         // 1- check if startup exist:
         Startup startup = startupRepository.findStartupById(startupId);
@@ -195,19 +158,10 @@ public class FreelancerProjectService {
             throw new ApiException("project not found");
         }
 
-        // 3- check if freelance exist:
-        Freelancer freelancer = freelancerRepository.findFreelancerById(freelanceId);
-        if(freelancer == null){
-            throw new ApiException("freelancer not exist");
-        }
-
-        // 4- check the project belong to the same startup & freelancer:
+        // 3- check the project belong to the same startup
         if(project.getStartup().getId() == null
-                || project.getFreelancer().getId() == null
-                || ! project.getStartup().getId().equals(startup.getId())
-                || ! project.getFreelancer().getId().equals(freelancer.getId())
-            ){
-            throw new ApiException("freelancer or startup not belong to project");
+                || ! project.getStartup().getId().equals(startup.getId())){
+            throw new ApiException("project and startup not belong to each other");
         }
 
         // 5- check if status still pending from freelancer:
@@ -215,7 +169,7 @@ public class FreelancerProjectService {
             throw new ApiException("status should be pending to cancel request");
         }
 
-        project.setStatus("pending"); // Reset to pending if cancelled
+        project.setStatus("cancelled");
         freelancerProjectRepository.save(project);
     }
 
@@ -291,11 +245,14 @@ public class FreelancerProjectService {
             throw new ApiException("project and startup not belong to each other");
         }
 
-        // 4- break relations
+        // 4- only allow deletion when pending
+        if (!"pending".equals(project.getStatus())) {
+            throw new ApiException("only pending projects can be deleted");
+        }
+
+        // 5- break relations then delete
         project.setFreelancer(null);
         project.setStartup(null);
-
-        // 5- delete project
         freelancerProjectRepository.delete(project);
 
     }

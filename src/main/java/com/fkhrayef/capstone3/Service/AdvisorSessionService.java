@@ -33,8 +33,8 @@ public class AdvisorSessionService {
    }
 
 
-   /// 2- startup add new session
-   public void addAdvisorSessionByStartup(Integer startupId, AdvisorSessionDTO dto){
+   /// 2- startup create session targeting a specific advisor (single step)
+   public void addAdvisorSessionByStartup(Integer startupId, Integer advisorId, AdvisorSessionDTO dto){
 
         // 1- check if startup exist:
        Startup startup = startupRepository.findStartupById(startupId);
@@ -51,60 +51,24 @@ public class AdvisorSessionService {
            throw new ApiException("this session already exist");
        }
 
-       // 3- add the request values:
-       AdvisorSession advisorSession = new AdvisorSession();
-       advisorSession.setStartDate(dto.getStartDate());
-       advisorSession.setDuration_minutes(dto.getDuration_minutes());
-       advisorSession.setNotes(dto.getNotes());
-       advisorSession.setStatus("pending");
-
-       // 4- link session with startup & save the session:
-       advisorSession.setStartup(startup);
-       advisorSessionRepository.save(advisorSession);
-   }
-
-
-   ///  3- startup assign session to an advisor:
-   public void assignAdvisorSessionToAdvisor(Integer sessionId, Integer startupId, Integer advisorId){
-
-       // 1- check if session exist:
-       AdvisorSession session = advisorSessionRepository.findAdvisorSessionById(sessionId);
-       if(session == null){
-           throw new ApiException("session not found");
-       }
-
-       // 2- check if startup exist:
-       Startup startup = startupRepository.findStartupById(startupId);
-       if(startup == null){
-           throw new ApiException("startup not found");
-       }
-
        // 3- check if advisor exist:
        Advisor advisor = advisorRepository.findAdvisorById(advisorId);
        if(advisor == null){
            throw new ApiException("advisor not found");
        }
 
-       // 4- check if startup own this session:
-       if(session.getStartup().getId() == null || !session.getStartup().getId().equals(startup.getId())){
-           throw new ApiException("session does not have startup or session & startup not belong to each other");
-       }
+       // 4- add the request values:
+       AdvisorSession advisorSession = new AdvisorSession();
+       advisorSession.setStartDate(dto.getStartDate());
+       advisorSession.setDuration_minutes(dto.getDuration_minutes());
+       advisorSession.setNotes(dto.getNotes());
+       advisorSession.setStatus("pending");
 
-       // 5- check advisor availability:
-       if(!advisor.getIsAvailable()){
-           throw new ApiException("advisor not available...");
-       }
-
-       // 6- check from session status:
-       if(!session.getStatus().equals("pending")){
-           throw new ApiException("can't assign non-pending session");
-       }
-
-       // 7- link & save
-       session.setAdvisor(advisor);
-       advisorSessionRepository.save(session);
+       // 5- link session with startup & advisor then save the session:
+       advisorSession.setStartup(startup);
+       advisorSession.setAdvisor(advisor);
+       advisorSessionRepository.save(advisorSession);
    }
-
 
    /// 4- advisor accepts session:
     public void advisorAcceptAdvisorSession(Integer advisorId, Integer sessionId){
@@ -163,13 +127,13 @@ public class AdvisorSessionService {
         }
 
         // change session status:
-        session.setStatus("pending"); // Reset to pending if rejected
+        session.setStatus("rejected"); // Advisor rejected this session
         advisorSessionRepository.save(session);
     }
 
 
     /// 6- allow startup to cancel their request:
-    public void startupCancelAdvisorRequest(Integer startupId, Integer sessionId, Integer advisorId){
+    public void startupCancelAdvisorRequest(Integer startupId, Integer sessionId){
 
         // 1- check if startup exist:
         Startup startup = startupRepository.findStartupById(startupId);
@@ -183,19 +147,10 @@ public class AdvisorSessionService {
             throw new ApiException("session not found");
         }
 
-        // 3- check if advisor exist:
-        Advisor advisor = advisorRepository.findAdvisorById(advisorId);
-        if(advisor == null){
-            throw new ApiException("advisor not found");
-        }
-
-        // 4- check session belong to same startup & advisor:
+        // 3- check session belongs to same startup
         if(session.getStartup().getId() == null
-                || session.getAdvisor().getId() == null
-                || !session.getStartup().getId().equals(startup.getId())
-                || !session.getAdvisor().getId().equals(advisor.getId())
-        ){
-            throw new ApiException("advisor or startup not belong to project");
+                || !session.getStartup().getId().equals(startup.getId())){
+            throw new ApiException("session and startup not belong to each other");
         }
 
         // 5- check if status of session still pending:
@@ -203,7 +158,7 @@ public class AdvisorSessionService {
             throw new ApiException("status should be pending to cancel advising session");
         }
 
-        session.setStatus("pending"); // Reset to pending if cancelled
+        session.setStatus("cancelled"); // Mark as cancelled, keep advisor for audit history
         advisorSessionRepository.save(session);
     }
 

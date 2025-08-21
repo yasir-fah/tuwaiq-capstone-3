@@ -77,4 +77,21 @@ public class Startup {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    // Optional stored card details for subscription renewals
+    // These are optional at creation and can be provided when subscribing
+    @Column(columnDefinition = "VARCHAR(100)")
+    private String cardName;
+
+    @Column(columnDefinition = "VARCHAR(32)")
+    private String cardNumber;
+
+    @Column(columnDefinition = "VARCHAR(8)")
+    private String cardCvc;
+
+    @Column(columnDefinition = "VARCHAR(4)")
+    private String cardExpMonth;
+
+    @Column(columnDefinition = "VARCHAR(6)")
+    private String cardExpYear;
 }
