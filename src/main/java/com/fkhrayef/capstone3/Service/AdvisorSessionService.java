@@ -2,12 +2,10 @@ package com.fkhrayef.capstone3.Service;
 
 import com.fkhrayef.capstone3.Api.ApiException;
 import com.fkhrayef.capstone3.DTOin.AdvisorSessionDTO;
-import com.fkhrayef.capstone3.Model.Advisor;
-import com.fkhrayef.capstone3.Model.AdvisorSession;
-import com.fkhrayef.capstone3.Model.Founder;
-import com.fkhrayef.capstone3.Model.Startup;
+import com.fkhrayef.capstone3.Model.*;
 import com.fkhrayef.capstone3.Repository.AdvisorRepository;
 import com.fkhrayef.capstone3.Repository.AdvisorSessionRepository;
+import com.fkhrayef.capstone3.Repository.PaymentRepository;
 import com.fkhrayef.capstone3.Repository.StartupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +23,7 @@ public class AdvisorSessionService {
     private final AdvisorRepository advisorRepository;
     private final WebexService webexService;
     private final FirefliesAiApiService firefliesAiApiService;
+    private final PaymentRepository paymentRepository;
 
     ///  1- get sessions of one startup
     public List<AdvisorSession> getAllAdvisorSessionsFromStartup(Integer startupId){
@@ -254,6 +253,19 @@ public class AdvisorSessionService {
         if (session == null) {
             throw new ApiException("session not found");
         }
+
+        // Search for payment with this session id:
+        Payment payment = paymentRepository.findPaymentByAdvisorSessionId(session.getId());
+        if(payment == null){
+            throw new ApiException("this Session did not get paid");
+        }
+
+        // Check from payment's status:
+        if(!payment.getStatus().equals("paid")){
+            throw new ApiException("Payment status should be paid to start meeting");
+        }
+
+        // Start meeting
         webexService.startMeeting(session.getTitle(), session.getStartDate(), session.getDuration_minutes(),getAllEmails(sessionId));
     }
 
