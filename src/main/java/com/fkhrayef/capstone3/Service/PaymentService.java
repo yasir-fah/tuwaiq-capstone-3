@@ -564,17 +564,20 @@ public class PaymentService {
                 cancelSubscription(startup.getId());
             } catch (Exception ignored) {}
 
-            try {
-                String founderPhone = resolveFounderPhone(startup);
-                String message = "Your subscription was cancelled due to missing payment information. Please resubscribe to continue your plan.";
-                logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, message);
-                if (founderPhone != null) {
-                    whatsappService.sendTextMessage(message, founderPhone);
+                            try {
+                    String founderPhone = resolveFounderPhone(startup);
+                    String message = "🚫 تم إلغاء اشتراكك\n\n" +
+                            "السبب: معلومات الدفع غير متوفرة\n\n" +
+                            "للمتابعة، يرجى إعادة الاشتراك مع تحديث بيانات البطاقة\n\n" +
+                            "شكراً لك";
+                    logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, message);
+                    if (founderPhone != null) {
+                        whatsappService.sendTextMessage(message, founderPhone);
+                    }
+                    logger.info("[Scheduler] Subscription cancelled due to missing card data. Notified: {}", founderPhone);
+                } catch (Exception ex) {
+                    logger.error("[Scheduler] Failed to send WhatsApp cancel notification: {}", ex.getMessage());
                 }
-                logger.info("[Scheduler] Subscription cancelled due to missing card data. Notified: {}", founderPhone);
-            } catch (Exception ex) {
-                logger.error("[Scheduler] Failed to send WhatsApp cancel notification: {}", ex.getMessage());
-            }
             return;
         }
 
@@ -618,9 +621,14 @@ public class PaymentService {
             try {
                 String founderPhone = resolveFounderPhone(startup);
                 String paymentLink = resolveTransactionUrl(moyasarResponse);
-                String successMessage = "Your subscription renewal has been initiated. Complete payment: "
-                        + paymentLink + " | Status: " + renewalPayment.getStatus() + ", Amount: "
-                        + renewalPayment.getAmount() + " " + renewalPayment.getCurrency();
+                String successMessage = "🔄 تم بدء تجديد اشتراكك\n\n" +
+                        "📋 تفاصيل التجديد:\n" +
+                        "• الخطة: " + subscription.getPlanType() + "\n" +
+                        "• الدورة: " + subscription.getBillingCycle() + "\n" +
+                        "• المبلغ: " + renewalPayment.getAmount() + " " + renewalPayment.getCurrency() + "\n" +
+                        "• الحالة: " + renewalPayment.getStatus() + "\n\n" +
+                        "🔗 رابط الدفع:\n" + paymentLink + "\n\n" +
+                        "يرجى إكمال الدفع لتفعيل اشتراكك";
                 logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, successMessage);
                 if (founderPhone != null) {
                     whatsappService.sendTextMessage(successMessage, founderPhone);
