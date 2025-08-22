@@ -16,6 +16,5 @@ public interface AdvisorSessionRepository extends JpaRepository<AdvisorSession,I
 
     AdvisorSession findAdvisorSessionById(Integer id);
 
-    @Query("select s from AdvisorSession s where s.id=:sessionId and s.status=:status")
-    boolean giveMeByAdvisorSessionIdAndStatus(Integer sessionId,String status);
+    boolean existsByIdAndStatus(Integer id, String status);
 }

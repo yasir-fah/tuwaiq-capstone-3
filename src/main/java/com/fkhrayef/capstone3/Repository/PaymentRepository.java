@@ -13,6 +13,4 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     // Find payment by Moyasar payment ID
     Payment findByMoyasarPaymentId(String moyasarPaymentId);
 
-    Payment findPaymentByAdvisorSessionId(Integer advisorSessionId);
-
 }

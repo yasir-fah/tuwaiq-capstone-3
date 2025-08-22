@@ -254,15 +254,9 @@ public class AdvisorSessionService {
             throw new ApiException("session not found");
         }
 
-        // Search for payment with this session id:
-        Payment payment = paymentRepository.findPaymentByAdvisorSessionId(session.getId());
-        if(payment == null){
-            throw new ApiException("this Session did not get paid");
-        }
-
         // Check from session's status ('confirmed' if payment was successful):
         boolean isConfirmed = advisorSessionRepository
-                .giveMeByAdvisorSessionIdAndStatus(session.getId(),"confirmed");
+                .existsByIdAndStatus(session.getId(),"confirmed");
         if(!isConfirmed){
             throw new ApiException("Payment for advising session:"+sessionId+" is not confirmed");
         }
