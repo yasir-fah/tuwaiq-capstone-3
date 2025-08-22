@@ -261,8 +261,8 @@ public class AdvisorSessionService {
         }
 
         // Check from session's status ('confirmed' if payment was successful):
-        boolean isConfirmed = paymentRepository.
-                existsByAdvisorSessionIdAndStatus(session.getId(),"confirmed");
+        boolean isConfirmed = advisorSessionRepository
+                .giveMeByAdvisorSessionIdAndStatus(session.getId(),"confirmed");
         if(!isConfirmed){
             throw new ApiException("Payment for advising session:"+sessionId+" is not confirmed");
         }
