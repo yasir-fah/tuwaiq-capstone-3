@@ -43,6 +43,7 @@ public class InvestmentDTO {
     @Positive(message = "Recurring Years must be greater than zero")
     private Integer recurringYears;
 
+    @NotNull(message = "Minimum Investment Period is required")
     @Positive(message = "Minimum Investment Period in years must be greater than zero")
     private Integer minimumInvestmentPeriod;
 }
