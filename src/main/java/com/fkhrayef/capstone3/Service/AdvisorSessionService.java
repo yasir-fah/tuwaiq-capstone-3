@@ -260,9 +260,11 @@ public class AdvisorSessionService {
             throw new ApiException("this Session did not get paid");
         }
 
-        // Check from payment's status:
-        if(!payment.getStatus().equals("paid")){
-            throw new ApiException("Payment status should be paid to start meeting");
+        // Check from session's status ('confirmed' if payment was successful):
+        boolean isConfirmed = paymentRepository.
+                existsByAdvisorSessionIdAndStatus(session.getId(),"confirmed");
+        if(!isConfirmed){
+            throw new ApiException("Payment for advising session:"+sessionId+" is not confirmed");
         }
 
         // Start meeting
