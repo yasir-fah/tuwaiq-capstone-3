@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -18,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class WebexService {
+    private static final Logger logger = LoggerFactory.getLogger(WebexService.class);
+    
     @Value("${WEBEX_KEY}")
     private String webexKey;
 
@@ -62,7 +66,7 @@ public class WebexService {
             requestBody.put("invitees", invitees);
 
             String json = objectMapper.writeValueAsString(requestBody);
-            System.out.println("Request JSON: " + json);
+            logger.debug("Webex meeting request JSON: {}", json);
 
             RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
