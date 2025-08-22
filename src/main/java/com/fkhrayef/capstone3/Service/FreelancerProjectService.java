@@ -8,8 +8,11 @@ import com.fkhrayef.capstone3.Model.Startup;
 import com.fkhrayef.capstone3.Repository.FreelancerProjectRepository;
 import com.fkhrayef.capstone3.Repository.FreelancerRepository;
 import com.fkhrayef.capstone3.Repository.StartupRepository;
+import com.fkhrayef.capstone3.Service.WhatsappService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -17,9 +20,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FreelancerProjectService {
 
+    private static final Logger logger = LoggerFactory.getLogger(FreelancerProjectService.class);
+
     private final StartupRepository startupRepository;
     private final FreelancerProjectRepository freelancerProjectRepository;
     private final FreelancerRepository freelancerRepository;
+    private final WhatsappService whatsappService;
 
     // list of freelancerProject from certain startup:
     public List<FreelancerProject> getAllFreelancerProject(Integer startupId){
@@ -78,6 +84,20 @@ public class FreelancerProjectService {
         freelancerProject.setStartup(startup);
         freelancerProject.setFreelancer(freelancer);
         freelancerProjectRepository.save(freelancerProject);
+        
+        // 6- Send WhatsApp notification to freelancer about new project request
+        try {
+            if (freelancer.getPhone() != null) {
+                String message = "🔔 طلب مشروع جديد\n" +
+                        "الشركة: " + startup.getName() + "\n" +
+                        "المشروع: " + freelancerProjectDTO.getProjectName() + "\n" +
+                        "يرجى مراجعة الطلب والرد عليه";
+                whatsappService.sendTextMessage(message, freelancer.getPhone());
+            }
+        } catch (Exception ex) {
+            // Log error but don't fail the main operation
+            logger.error("Failed to send WhatsApp notification: {}", ex.getMessage());
+        }
 
     }
 

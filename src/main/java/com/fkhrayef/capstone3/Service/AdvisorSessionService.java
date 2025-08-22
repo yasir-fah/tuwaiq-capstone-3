@@ -7,8 +7,11 @@ import com.fkhrayef.capstone3.Repository.AdvisorRepository;
 import com.fkhrayef.capstone3.Repository.AdvisorSessionRepository;
 import com.fkhrayef.capstone3.Repository.PaymentRepository;
 import com.fkhrayef.capstone3.Repository.StartupRepository;
+import com.fkhrayef.capstone3.Service.WhatsappService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.util.ArrayList;
@@ -18,12 +21,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdvisorSessionService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AdvisorSessionService.class);
+
     private final AdvisorSessionRepository advisorSessionRepository;
     private final StartupRepository startupRepository;
     private final AdvisorRepository advisorRepository;
     private final WebexService webexService;
     private final FirefliesAiApiService firefliesAiApiService;
     private final PaymentRepository paymentRepository;
+    private final WhatsappService whatsappService;
 
     ///  1- get sessions of one startup
     public List<AdvisorSession> getAllAdvisorSessionsFromStartup(Integer startupId){
@@ -73,6 +79,20 @@ public class AdvisorSessionService {
        advisorSession.setStartup(startup);
        advisorSession.setAdvisor(advisor);
        advisorSessionRepository.save(advisorSession);
+       
+       // 6- Send WhatsApp notification to advisor about new request
+       try {
+           if (advisor.getPhone() != null) {
+               String message = "🔔 طلب جلسة استشارية جديد\n" +
+                       "الشركة: " + startup.getName() + "\n" +
+                       "الجلسة: " + dto.getTitle() + "\n" +
+                       "يرجى مراجعة الطلب والرد عليه";
+               whatsappService.sendTextMessage(message, advisor.getPhone());
+           }
+               } catch (Exception ex) {
+            // Log error but don't fail the main operation
+            logger.error("Failed to send WhatsApp notification: {}", ex.getMessage());
+        }
    }
 
    /// 3- advisor accepts session:
