@@ -15,12 +15,16 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashMap;
 
 @ControllerAdvice
 public class ControllerAdvise {
+
+    private static final Logger logger = LoggerFactory.getLogger(ControllerAdvise.class);
 
     // Our Exception
     @ExceptionHandler(value = ApiException.class)
@@ -99,7 +103,7 @@ public class ControllerAdvise {
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity<?> handleGenericException(Exception exception) {
         // Log the exception for debugging (in production, use proper logging)
-        System.err.println("Unexpected error: " + exception.getMessage());
+        logger.error("Unexpected error: {}", exception.getMessage(), exception);
         
         // Return 500 Internal Server Error for unexpected exceptions
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

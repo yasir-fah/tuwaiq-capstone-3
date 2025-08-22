@@ -9,11 +9,15 @@ import okhttp3.Response;
 import okhttp3.RequestBody;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class WhatsappService {
+
+    private static final Logger logger = LoggerFactory.getLogger(WhatsappService.class);
 
     @Value("${whatsapp.ultramsg.key}")
     private String whatsappKey;
@@ -47,7 +51,7 @@ public class WhatsappService {
                 throw new ApiException("Unexpected error while sending message to Whatsapp: " + response.code());
             }
             String responseBody = response.body().string();
-            System.out.println(responseBody);
+            logger.debug("WhatsApp API response: {}", responseBody);
         } catch (Exception e) {
             throw new ApiException("Unexpected error while sending message to Whatsapp");
         }

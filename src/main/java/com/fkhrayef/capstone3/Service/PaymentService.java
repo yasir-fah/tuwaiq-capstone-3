@@ -12,12 +12,19 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
     // Only the repositories we actually need
     private final PaymentRepository paymentRepository;
@@ -32,6 +39,9 @@ public class PaymentService {
 
     @Value("${moyasar.api.key}")
     private String apiKey;
+
+    @Value("${moyasar.webhook.secret}")
+    private String webhookSecret;
 
     // Simple hardcoded values
     private static final String MOYASAR_API_URL = "https://api.moyasar.com/v1";
@@ -519,24 +529,26 @@ public class PaymentService {
     @Scheduled(cron = "0 * * * * *") // Every minute (for testing)
     public void handleSubscriptionRenewals() {
         try {
-            System.out.println("[Scheduler] Starting daily subscription renewal check...");
+            logger.info("[Scheduler] Starting daily subscription renewal check...");
             // Find all active subscriptions that are expiring today or have expired
             List<Subscription> expiringSubscriptions = subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
             
             for (Subscription subscription : expiringSubscriptions) {
                 try {
-                    System.out.println("[Scheduler] Processing renewal for startupId=" + (subscription.getStartup() != null ? subscription.getStartup().getId() : null) +
-                            ", plan=" + subscription.getPlanType() + ", cycle=" + subscription.getBillingCycle());
+                    logger.info("[Scheduler] Processing renewal for startupId={}, plan={}, cycle={}", 
+                        subscription.getStartup() != null ? subscription.getStartup().getId() : null,
+                        subscription.getPlanType(), 
+                        subscription.getBillingCycle());
                     processSubscriptionRenewal(subscription);
                 } catch (Exception e) {
                     // Continue with other subscriptions even if one fails
-                    System.out.println("[Scheduler] Failed to process renewal: " + e.getMessage());
+                    logger.error("[Scheduler] Failed to process renewal: {}", e.getMessage());
                 }
             }
-            System.out.println("[Scheduler] Renewal check completed.");
+            logger.info("[Scheduler] Renewal check completed.");
         } catch (Exception e) {
             // Renewal job failed, will retry tomorrow
-            System.out.println("[Scheduler] Renewal job failed: " + e.getMessage());
+            logger.error("[Scheduler] Renewal job failed: {}", e.getMessage());
         }
     }
     
@@ -555,13 +567,13 @@ public class PaymentService {
             try {
                 String founderPhone = resolveFounderPhone(startup);
                 String message = "Your subscription was cancelled due to missing payment information. Please resubscribe to continue your plan.";
-                System.out.println("[Scheduler][WhatsApp] To: " + founderPhone + " | Message: " + message);
+                logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, message);
                 if (founderPhone != null) {
                     whatsappService.sendTextMessage(message, founderPhone);
                 }
-                System.out.println("[Scheduler] Subscription cancelled due to missing card data. Notified: " + founderPhone);
+                logger.info("[Scheduler] Subscription cancelled due to missing card data. Notified: {}", founderPhone);
             } catch (Exception ex) {
-                System.out.println("[Scheduler] Failed to send WhatsApp cancel notification: " + ex.getMessage());
+                logger.error("[Scheduler] Failed to send WhatsApp cancel notification: {}", ex.getMessage());
             }
             return;
         }
@@ -582,7 +594,7 @@ public class PaymentService {
             renewalRequest.setDescription("Auto-renewal: " + subscription.getPlanType() + " (" + subscription.getBillingCycle() + ")");
             renewalRequest.setCurrency("SAR");
 
-            System.out.println("[Scheduler] Attempting auto-renewal charge for startupId=" + (startup != null ? startup.getId() : null));
+            logger.info("[Scheduler] Attempting auto-renewal charge for startupId={}", startup.getId());
             MoyasarPaymentResponseDTO moyasarResponse = processPayment(renewalRequest);
 
             Payment renewalPayment = new Payment();
@@ -609,15 +621,15 @@ public class PaymentService {
                 String successMessage = "Your subscription renewal has been initiated. Complete payment: "
                         + paymentLink + " | Status: " + renewalPayment.getStatus() + ", Amount: "
                         + renewalPayment.getAmount() + " " + renewalPayment.getCurrency();
-                System.out.println("[Scheduler][WhatsApp] To: " + founderPhone + " | Message: " + successMessage);
+                logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, successMessage);
                 if (founderPhone != null) {
                     whatsappService.sendTextMessage(successMessage, founderPhone);
                 }
             } catch (Exception ex) {
-                System.out.println("[Scheduler] Failed to send WhatsApp renewal notification: " + ex.getMessage());
+                logger.error("[Scheduler] Failed to send WhatsApp renewal notification: {}", ex.getMessage());
             }
         } catch (Exception e) {
-            System.out.println("[Scheduler] Auto-renewal charge failed: " + e.getMessage());
+            logger.error("[Scheduler] Auto-renewal charge failed: {}", e.getMessage());
         }
     }
 
@@ -636,5 +648,40 @@ public class PaymentService {
      */
     public List<Subscription> getExpiringSubscriptions() {
         return subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
+    }
+
+    /**
+     * Handle Moyasar webhook payload
+     */
+    public void handleWebhook(String payload) {
+        try {
+            // Parse the JSON payload
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode webhookData = mapper.readTree(payload);
+            
+            // Verify webhook secret token
+            String secretToken = webhookData.path("secret_token").asText();
+            if (!webhookSecret.equals(secretToken)) {
+                throw new ApiException("Invalid webhook secret token");
+            }
+            
+            // Extract payment information
+            String type = webhookData.path("type").asText();
+            
+            // Handle payment_paid events
+            if ("payment_paid".equals(type)) {
+                JsonNode paymentData = webhookData.path("data");
+                String paymentId = paymentData.path("id").asText();
+                String status = paymentData.path("status").asText();
+                
+                logger.info("[Webhook] Processing payment_paid: {} with status: {}", paymentId, status);
+                handlePaymentCompletion(paymentId, status);
+            } else {
+                logger.info("[Webhook] Ignoring non-payment_paid event: {}", type);
+            }
+            
+        } catch (Exception e) {
+            throw new ApiException("Failed to process webhook: " + e.getMessage());
+        }
     }
 }
