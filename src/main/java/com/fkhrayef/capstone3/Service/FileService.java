@@ -13,23 +13,22 @@ import com.adobe.pdfservices.operation.pdfjobs.params.documentmerge.OutputFormat
 import com.adobe.pdfservices.operation.pdfjobs.result.DocumentMergeResult;
 import com.fkhrayef.capstone3.Api.ApiException;
 import com.fkhrayef.capstone3.DTOout.ContractDTO;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
-public class ContractService {
+public class FileService {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(ContractService.class);
+    private final S3Service s3Service;
 
     private PDFServices pdfServices;
     @Value("${PDF_SERVICES_CLIENT_ID}")
@@ -37,7 +36,7 @@ public class ContractService {
     @Value("${PDF_SERVICES_CLIENT_SECRET}")
     private String PDF_SECRET;
 
-    
+    @PostConstruct
     public void initialize() {
         Credentials credentials = new ServicePrincipalCredentials(PDF_ID, PDF_SECRET);
         pdfServices = new PDFServices(credentials);
@@ -45,8 +44,8 @@ public class ContractService {
 
     public void createContract(ContractDTO contractDTO, String contractPath) throws ApiException{
         InputStream inputStream;
-        Asset asset = null;
-        JSONObject jsonDataForMerge = null;
+        Asset asset;
+        JSONObject jsonDataForMerge;
         try {
             inputStream = new File("src/main/resources/" + contractPath + ".docx").toURI().toURL().openStream();
             asset = pdfServices.upload(inputStream, PDFServicesMediaType.DOCX.getMediaType());
@@ -71,16 +70,12 @@ public class ContractService {
             Asset resultAsset = pdfServicesResponse.getResult().getAsset();
             StreamAsset streamAsset = pdfServices.getContent(resultAsset);
 
-            File resultsDir = new File("PATH NAME!!!");
-            if (!resultsDir.exists()) {
-                if (!resultsDir.mkdirs()) {
-                    throw new ApiException("Failed to create results directory");
-                }
-            }
+            byte[] fileContent = IOUtils.toByteArray(streamAsset.getInputStream());
 
-            OutputStream outputStream = Files.newOutputStream(resultsDir.toPath().resolve(contractPath + "_result.pdf"));
-            IOUtils.copy(streamAsset.getInputStream(), outputStream);
+            String s3Key = contractPath +"_"+contractDTO.getStartup_name().trim().replaceAll("\\s+", "_")
+                           +"_"+contractDTO.getInvestor_name().trim().replaceAll("\\s+", "_")+".pdf";
 
+            s3Service.upload(s3Key, fileContent, "application/pdf");
         } catch (Exception e){
             throw new ApiException(e.getMessage());
         }
