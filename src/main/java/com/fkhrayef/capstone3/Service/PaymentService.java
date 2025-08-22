@@ -15,6 +15,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -32,6 +35,9 @@ public class PaymentService {
 
     @Value("${moyasar.api.key}")
     private String apiKey;
+
+    @Value("${moyasar.webhook.secret}")
+    private String webhookSecret;
 
     // Simple hardcoded values
     private static final String MOYASAR_API_URL = "https://api.moyasar.com/v1";
@@ -636,5 +642,40 @@ public class PaymentService {
      */
     public List<Subscription> getExpiringSubscriptions() {
         return subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
+    }
+
+    /**
+     * Handle Moyasar webhook payload
+     */
+    public void handleWebhook(String payload) {
+        try {
+            // Parse the JSON payload
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode webhookData = mapper.readTree(payload);
+            
+            // Verify webhook secret token
+            String secretToken = webhookData.path("secret_token").asText();
+            if (!webhookSecret.equals(secretToken)) {
+                throw new ApiException("Invalid webhook secret token");
+            }
+            
+            // Extract payment information
+            String type = webhookData.path("type").asText();
+            
+            // Handle payment_paid events
+            if ("payment_paid".equals(type)) {
+                JsonNode paymentData = webhookData.path("data");
+                String paymentId = paymentData.path("id").asText();
+                String status = paymentData.path("status").asText();
+                
+                System.out.println("[Webhook] Processing payment_paid: " + paymentId + " with status: " + status);
+                handlePaymentCompletion(paymentId, status);
+            } else {
+                System.out.println("[Webhook] Ignoring non-payment_paid event: " + type);
+            }
+            
+        } catch (Exception e) {
+            throw new ApiException("Failed to process webhook: " + e.getMessage());
+        }
     }
 }

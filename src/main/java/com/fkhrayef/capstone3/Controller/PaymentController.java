@@ -69,22 +69,39 @@ public class PaymentController {
         }
     }
 
-    // Moyasar callback endpoint
+    // Moyasar callback endpoint (just shows status)
     @GetMapping("/callback")
     public ResponseEntity<?> handleCallback(@RequestParam String id, 
                                            @RequestParam String status, 
                                            @RequestParam(required = false) String message) {
+        // NO business logic - just return a message
+        return ResponseEntity.ok(new ApiResponse(
+            "Payment " + status + " processed. Moyasar ID: " + id + 
+            (message != null ? ". Message: " + message : "")
+        ));
+    }
+
+    // Moyasar webhook endpoint (handles business logic)
+    @PostMapping("/webhook")
+    public ResponseEntity<?> handleWebhook(@RequestBody String payload) {
         try {
-            // Handle payment completion (creates subscription, updates balances, etc.)
-            paymentService.handlePaymentCompletion(id, status);
+            // Process the webhook payload (includes secret token validation)
+            paymentService.handleWebhook(payload);
             
-            // Return callback confirmation
-            return ResponseEntity.ok(new ApiResponse(
-                "Payment " + status + " processed successfully. Moyasar ID: " + id + 
-                (message != null ? ". Message: " + message : "")
-            ));
+            return ResponseEntity.ok(new ApiResponse("Webhook processed successfully"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse("Callback processing failed: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new ApiResponse("Webhook processing failed: " + e.getMessage()));
+        }
+    }
+
+    // Simple payment status check endpoint (for frontend use)
+    @GetMapping("/status/{paymentId}")
+    public ResponseEntity<?> getPaymentStatus(@PathVariable String paymentId) {
+        try {
+            String status = paymentService.getPaymentStatus(paymentId);
+            return ResponseEntity.ok(new ApiResponse("Payment status: " + status));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse("Failed to get payment status: " + e.getMessage()));
         }
     }
 
