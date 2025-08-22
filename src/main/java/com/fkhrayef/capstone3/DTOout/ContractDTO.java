@@ -15,5 +15,6 @@ public class ContractDTO {
     private String payment_method;
     private Integer investment_period;
     private String exchange;
-
+    private Integer recurring_years;
+    private Double recurring_amount;
 }
