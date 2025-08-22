@@ -16,8 +16,11 @@ public class InvestmentDTO {
 
 
 
-    private Integer InvestorId;
-    private Integer StartupId;
+
+    @NotNull
+    private Integer investor_id;
+    @NotNull
+    private Integer startup_id;
 
     @NotEmpty(message = "Round Type is required")
     @Pattern(regexp = "^(?i)(pre_seed|seed|series_a|series_b|series_c)$")

@@ -22,17 +22,18 @@ public class InvestmentService {
     private final InvestorRepository investorRepository;
     private final StartupRepository startupRepository;
     private final FileService fileService;
+    private final S3Service s3Service;
 
     public List<Investment> getAllInvestments() {
         return investmentRepository.findAll();
     }
 
     public void createInvestment(InvestmentDTO investmentDTO, String exchange) throws ApiException {
-        Investor investor = investorRepository.findInvestorById(investmentDTO.getInvestorId());
+        Investor investor = investorRepository.findInvestorById(investmentDTO.getInvestor_id());
         if (investor == null) {
             throw new ApiException("Investor not found");
         }
-        Startup startup = startupRepository.findStartupById(investmentDTO.getStartupId());
+        Startup startup = startupRepository.findStartupById(investmentDTO.getStartup_id());
         if (startup == null) {
             throw new ApiException("Startup not found");
         }
@@ -103,6 +104,21 @@ public class InvestmentService {
         else {
             ContractDTO contractDTO = new ContractDTO(investment.getEffectiveDate(), investment.getInvestor().getName(), investment.getStartup().getName(), investment.getInvestment_amount(), investment.getPaymentMethod(), investment.getMinimumInvestmentPeriod(), exchange,investment.getRecurringYears(),investment.getRecurringAmount());
             fileService.createContract(contractDTO, "recurring_basis");
+        }
+    }
+
+    public byte[] viewContract(Integer investment_id){
+        Investment investment = investmentRepository.findInvestmentById(investment_id);
+        if (investment == null){
+            throw new ApiException("Investment not found");
+        }
+        if (investment.getIsRecurring()){
+            return s3Service.downloadFile("recurring_basis" +"_"+investment.getStartup().getName().trim().replaceAll("\\s+", "_")
+                                   +"_"+investment.getInvestor().getName().trim().replaceAll("\\s+", "_")+".pdf");
+        }
+        else {
+            return s3Service.downloadFile("one_time_basis" +"_"+investment.getStartup().getName().trim().replaceAll("\\s+", "_")
+                                   +"_"+investment.getInvestor().getName().trim().replaceAll("\\s+", "_")+".pdf");
         }
     }
 

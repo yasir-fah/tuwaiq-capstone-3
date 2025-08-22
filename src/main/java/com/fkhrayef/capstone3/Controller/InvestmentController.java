@@ -5,8 +5,7 @@ import com.fkhrayef.capstone3.DTOin.InvestmentDTO;
 import com.fkhrayef.capstone3.Service.InvestmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,8 +20,8 @@ public class InvestmentController {
         return ResponseEntity.status(HttpStatus.OK.value()).body(investmentService.getAllInvestments());
     }
 
-    @PostMapping("/add/")
-    public ResponseEntity<?> addInvestment(@RequestBody @Valid InvestmentDTO investmentDTO, @RequestParam String exchange){
+    @PostMapping("/add/{exchange}")
+    public ResponseEntity<?> addInvestment(@RequestBody @Valid InvestmentDTO investmentDTO, @PathVariable String exchange){
         investmentService.createInvestment(investmentDTO, exchange);
         return ResponseEntity.status(HttpStatus.CREATED.value()).body(new ApiResponse("Investment added successfully"));
     }
@@ -37,5 +36,17 @@ public class InvestmentController {
     public ResponseEntity<?> deleteInvestment(@PathVariable Integer investment_id){
         investmentService.deleteInvestment(investment_id);
         return ResponseEntity.status(HttpStatus.OK.value()).body(new ApiResponse("Investment deleted successfully"));
+    }
+
+    @GetMapping("/view/{investment_id}")
+    public ResponseEntity<?> viewContract(@PathVariable Integer investment_id){
+        byte[] fileContent = investmentService.viewContract(investment_id);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.attachment().filename("contract.pdf").build());
+
+        return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
+
     }
 }
