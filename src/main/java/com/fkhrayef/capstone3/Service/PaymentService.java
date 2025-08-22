@@ -588,7 +588,7 @@ public class PaymentService {
             renewalRequest.setDescription("Auto-renewal: " + subscription.getPlanType() + " (" + subscription.getBillingCycle() + ")");
             renewalRequest.setCurrency("SAR");
 
-            System.out.println("[Scheduler] Attempting auto-renewal charge for startupId=" + (startup != null ? startup.getId() : null));
+            System.out.println("[Scheduler] Attempting auto-renewal charge for startupId=" + startup.getId());
             MoyasarPaymentResponseDTO moyasarResponse = processPayment(renewalRequest);
 
             Payment renewalPayment = new Payment();
