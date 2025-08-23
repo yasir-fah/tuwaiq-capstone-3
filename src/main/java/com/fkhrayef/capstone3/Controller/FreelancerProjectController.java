@@ -15,39 +15,39 @@ public class FreelancerProjectController {
     private final FreelancerProjectService freelancerProjectService;
 
     @GetMapping("/get/startup/project/{startup_id}")
-    public ResponseEntity<?> getAllFreelancerProject(@PathVariable Integer startup_id){
+    public ResponseEntity<?> getAllFreelancerProject(@PathVariable Integer startup_id) {
         return ResponseEntity.status(200).body(freelancerProjectService.getAllFreelancerProject(startup_id));
     }
 
     @PostMapping("/add/project/to/{startup_id}/with/{freelance_id}")
     public ResponseEntity<?> addFreelancerProjectByStartup(@PathVariable Integer startup_id,
                                                            @PathVariable Integer freelance_id,
-                                                           @Valid @RequestBody FreelancerProjectDTO projectDTO){
-        freelancerProjectService.addFreelancerProjectByStartup(startup_id,freelance_id,projectDTO);
+                                                           @Valid @RequestBody FreelancerProjectDTO projectDTO) {
+        freelancerProjectService.addFreelancerProjectByStartup(startup_id, freelance_id, projectDTO);
         return ResponseEntity.status(200).body(new ApiResponse("project requested from freelancer, pending freelancer response"));
     }
 
     @PutMapping("/update/freelance/{freelance_id}/accept/{project_id}")
     public ResponseEntity<?> freelancerAcceptFreelancerProject(@PathVariable Integer freelance_id,
-                                                               @PathVariable Integer project_id){
-        freelancerProjectService.freelancerAcceptFreelancerProject(freelance_id,project_id);
-        return ResponseEntity.status(200).body(new ApiResponse("freelance with id:"+freelance_id+" accepted project with id:"+project_id));
+                                                               @PathVariable Integer project_id) {
+        freelancerProjectService.freelancerAcceptFreelancerProject(freelance_id, project_id);
+        return ResponseEntity.status(200).body(new ApiResponse("freelance with id:" + freelance_id + " accepted project with id:" + project_id));
     }
 
 
     @PutMapping("/update/freelance/{freelance_id}/reject/{project_id}")
     public ResponseEntity<?> freelancerRejectFreelancerProject(@PathVariable Integer freelance_id,
-                                                               @PathVariable Integer project_id){
-        freelancerProjectService.freelancerRejectFreelancerProject(freelance_id,project_id);
-        return ResponseEntity.status(200).body(new ApiResponse("freelance with id:"+freelance_id+" rejected project with id:"+project_id));
+                                                               @PathVariable Integer project_id) {
+        freelancerProjectService.freelancerRejectFreelancerProject(freelance_id, project_id);
+        return ResponseEntity.status(200).body(new ApiResponse("freelance with id:" + freelance_id + " rejected project with id:" + project_id));
     }
 
 
     @PutMapping("/update/startup/{startup_id}/cancel/{project_id}")
     public ResponseEntity<?> startupCancelFreelanceRequest(@PathVariable Integer startup_id,
-                                                           @PathVariable Integer project_id){
-        freelancerProjectService.startupCancelFreelanceRequest(startup_id,project_id);
-        return ResponseEntity.status(200).body(new ApiResponse("project request with id:"+project_id+" cancelled by start up with id:"+startup_id));
+                                                           @PathVariable Integer project_id) {
+        freelancerProjectService.startupCancelFreelanceRequest(startup_id, project_id);
+        return ResponseEntity.status(200).body(new ApiResponse("project request with id:" + project_id + " cancelled by start up with id:" + startup_id));
     }
 
 

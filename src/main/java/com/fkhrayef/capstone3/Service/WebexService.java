@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class WebexService {
     private static final Logger logger = LoggerFactory.getLogger(WebexService.class);
-    
+
     @Value("${WEBEX_KEY}")
     private String webexKey;
 
@@ -100,6 +100,11 @@ public class WebexService {
                     .addHeader("Accept", "application/json")
                     .delete()
                     .build();
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new ApiException("Meeting deletion failed");
+                }
+            }
         } catch (Exception e) {
             throw new ApiException("Unexpected error while deleting meeting");
         }

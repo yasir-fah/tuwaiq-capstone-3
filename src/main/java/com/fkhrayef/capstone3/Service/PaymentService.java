@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -49,12 +50,12 @@ public class PaymentService {
     // Simple hardcoded values
     private static final String MOYASAR_API_URL = "https://api.moyasar.com/v1";
     private static final String CURRENCY = "SAR";
-    
+
     // Dynamic callback URL using environment variable
     private String getCallbackUrl() {
         return baseUrl + "/api/v1/payments/callback";
     }
-    
+
     // Helper method to resolve transaction URL from Moyasar response
     private String resolveTransactionUrl(MoyasarPaymentResponseDTO moyasarResponse) {
         String transactionUrl = moyasarResponse.getTransaction_url();
@@ -63,14 +64,14 @@ public class PaymentService {
         }
         return transactionUrl;
     }
-    
+
     // Subscription pricing
     private static final Double PRO_MONTHLY_PRICE = 99.0;
     private static final Double PRO_YEARLY_PRICE = 990.0; // 10 months price
     private static final Double ENTERPRISE_MONTHLY_PRICE = 299.0;
     private static final Double ENTERPRISE_YEARLY_PRICE = 2990.0; // 10 months price
-    
-    
+
+
     public MoyasarPaymentResponseDTO processPayment(PaymentRequest paymentRequest) {
 
         String url = MOYASAR_API_URL + "/payments";
@@ -132,33 +133,33 @@ public class PaymentService {
         if (startup == null) {
             throw new ApiException("Startup not found");
         }
-        
+
         // Check if project exists
         FreelancerProject project = freelancerProjectRepository.findFreelancerProjectById(projectId);
         if (project == null) {
             throw new ApiException("Project not found");
         }
-        
+
         // Check if project belongs to this startup
         if (project.getStartup() == null || !project.getStartup().getId().equals(startupId)) {
             throw new ApiException("Project does not belong to this startup");
         }
-        
+
         // Check if freelancer exists
         if (project.getFreelancer() == null) {
             throw new ApiException("No freelancer assigned to this project");
         }
-        
+
         // Calculate hourly amount
         Double amount = project.getFreelancer().getHourlyRate() * project.getEstimatedHours();
-        
+
         // Set payment details for Moyasar
         paymentRequest.setAmount(amount);
         paymentRequest.setDescription("Project payment for " + project.getProjectName());
-        
+
         // Process payment through Moyasar
         MoyasarPaymentResponseDTO moyasarResponse = processPayment(paymentRequest);
-        
+
         // Create payment record in database
         Payment payment = new Payment();
         payment.setAmount(amount);
@@ -170,11 +171,11 @@ public class PaymentService {
         payment.setFreelancerId(project.getFreelancer().getId());
         payment.setStartup(startup);
         payment.setMoyasarPaymentId(moyasarResponse.getId()); // Clean access to ID
-        
+
         Payment saved = paymentRepository.save(payment);
-        
+
         // Balance will be updated when webhook confirms payment
-        
+
         String transactionUrl = resolveTransactionUrl(moyasarResponse);
         String message = "Payment initiated. Please complete payment using the provided link.";
         return new PaymentCreationResponseDTO(saved, transactionUrl, moyasarResponse.getId(), saved.getStatus(), message);
@@ -186,23 +187,23 @@ public class PaymentService {
         if (startup == null) {
             throw new ApiException("Startup not found");
         }
-        
+
         // Check if advisor session exists
         AdvisorSession session = advisorSessionRepository.findAdvisorSessionById(sessionId);
         if (session == null) {
             throw new ApiException("Advisor session not found");
         }
-        
+
         // Check if session belongs to this startup
         if (session.getStartup() == null || !session.getStartup().getId().equals(startupId)) {
             throw new ApiException("Advisor session does not belong to this startup");
         }
-        
+
         // Check if advisor is assigned to session
         if (session.getAdvisor() == null) {
             throw new ApiException("No advisor assigned to this session");
         }
-        
+
         // Use real session cost (or calculate from advisor hourly rate × duration if sessionCost is null)
         Double amount = session.getSessionCost();
         if (amount == null) {
@@ -211,7 +212,7 @@ public class PaymentService {
                 Double hourlyRate = session.getAdvisor().getHourlyRate();
                 Double hours = session.getDuration_minutes() / 60.0;
                 amount = hourlyRate * hours;
-                
+
                 // Update the session cost in database for future reference
                 session.setSessionCost(amount);
                 advisorSessionRepository.save(session);
@@ -219,14 +220,14 @@ public class PaymentService {
                 throw new ApiException("Cannot calculate session cost: missing duration");
             }
         }
-        
+
         // Set payment details for Moyasar
         paymentRequest.setAmount(amount);
         paymentRequest.setDescription("Advisor session payment");
-        
+
         // Process payment through Moyasar
         MoyasarPaymentResponseDTO moyasarResponse = processPayment(paymentRequest);
-        
+
         // Create payment record
         Payment payment = new Payment();
         payment.setAmount(amount);
@@ -238,11 +239,11 @@ public class PaymentService {
         payment.setAdvisorId(session.getAdvisor() != null ? session.getAdvisor().getId() : null);
         payment.setStartup(startup);
         payment.setMoyasarPaymentId(moyasarResponse.getId()); // Clean access to ID
-        
+
         Payment saved = paymentRepository.save(payment);
-        
+
         // Balance will be updated when webhook confirms payment
-        
+
         String transactionUrl = resolveTransactionUrl(moyasarResponse);
         String message = "Payment initiated. Please complete payment using the provided link.";
         return new PaymentCreationResponseDTO(saved, transactionUrl, moyasarResponse.getId(), saved.getStatus(), message);
@@ -254,13 +255,13 @@ public class PaymentService {
         if (startup == null) {
             throw new ApiException("Startup not found");
         }
-        
+
         // Check if startup already has an active subscription
         Subscription existingSubscription = subscriptionRepository.findSubscriptionById(startupId);
         if (existingSubscription != null) {
             throw new ApiException("Startup already has a subscription. Please cancel the current subscription before subscribing to a new plan.");
         }
-        
+
         // Validate plan type and billing cycle
         if (!planType.equals("pro") && !planType.equals("enterprise")) {
             throw new ApiException("Invalid plan type. Must be 'pro' or 'enterprise'");
@@ -268,7 +269,7 @@ public class PaymentService {
         if (!billingCycle.equals("monthly") && !billingCycle.equals("yearly")) {
             throw new ApiException("Invalid billing cycle. Must be 'monthly' or 'yearly'");
         }
-        
+
         // Calculate amount based on plan and billing cycle
         Double amount;
         if (planType.equals("pro")) {
@@ -276,7 +277,7 @@ public class PaymentService {
         } else {
             amount = billingCycle.equals("monthly") ? ENTERPRISE_MONTHLY_PRICE : ENTERPRISE_YEARLY_PRICE;
         }
-        
+
         // Persist card details on the startup for future renewals
         if (paymentRequest.getName() != null) startup.setCardName(paymentRequest.getName());
         if (paymentRequest.getNumber() != null) startup.setCardNumber(paymentRequest.getNumber());
@@ -288,10 +289,10 @@ public class PaymentService {
         // Set payment details for Moyasar
         paymentRequest.setAmount(amount);
         paymentRequest.setDescription("Subscription: " + planType + " (" + billingCycle + ")");
-        
+
         // Process payment through Moyasar
         MoyasarPaymentResponseDTO moyasarResponse = processPayment(paymentRequest);
-        
+
         // Create payment record
         Payment payment = new Payment();
         payment.setAmount(amount);
@@ -301,19 +302,19 @@ public class PaymentService {
         payment.setDescription("Subscription: " + planType + " (" + billingCycle + ") - " + amount + " " + CURRENCY);
         payment.setStartup(startup);
         payment.setMoyasarPaymentId(moyasarResponse.getId());
-        
+
         // Set null for unused reference fields to avoid constraint issues
         payment.setFreelancerProjectId(null);
         payment.setAdvisorSessionId(null);
         payment.setSubscriptionId(null);
         payment.setFreelancerId(null);
         payment.setAdvisorId(null);
-        
+
         Payment saved = paymentRepository.save(payment);
-        
+
         // Don't create subscription yet - wait for payment completion via webhook
         // The subscription will be created when Moyasar sends "PAID" status
-        
+
         String transactionUrl = resolveTransactionUrl(moyasarResponse);
         String message = "Payment initiated. Please complete payment using the provided link.";
         return new PaymentCreationResponseDTO(saved, transactionUrl, moyasarResponse.getId(), saved.getStatus(), message);
@@ -335,7 +336,7 @@ public class PaymentService {
         }
         return payment;
     }
-    
+
     /**
      * Handle payment completion - called when Moyasar webhook confirms payment
      * Creates subscription for subscription payments, updates balances for other payments
@@ -346,12 +347,12 @@ public class PaymentService {
         if (payment == null) {
             throw new ApiException("Payment not found with Moyasar ID: " + moyasarPaymentId);
         }
-        
+
         // Update payment status
         String newStatus = (moyasarStatus == null ? "pending" : moyasarStatus.toLowerCase());
         payment.setStatus(newStatus);
         paymentRepository.save(payment);
-        
+
         // Handle different payment types
         if ("subscription".equals(payment.getPaymentType()) && ("paid".equals(newStatus) || "captured".equals(newStatus))) {
             createSubscriptionFromPayment(payment);
@@ -369,7 +370,7 @@ public class PaymentService {
             sendPaymentCompletionNotification(payment, "advisor_session");
         }
     }
-    
+
     /**
      * Create subscription from completed payment
      */
@@ -381,28 +382,28 @@ public class PaymentService {
             String[] parts = description.split(" - ")[0].split(": ")[1].split(" \\(");
             String planType = parts[0];
             String billingCycle = parts[1].replace(")", "");
-            
+
             Integer startupId = payment.getStartup().getId();
-            
+
             // Update existing subscription in place if present; otherwise create new
             Subscription subscription = subscriptionRepository.findSubscriptionById(startupId);
             if (subscription == null) {
                 subscription = new Subscription();
                 subscription.setStartup(payment.getStartup()); // @MapsId will set ID from startup
             }
-            
+
             subscription.setPlanType(planType);
             subscription.setBillingCycle(billingCycle);
             subscription.setStatus("active");
             subscription.setStartDate(LocalDateTime.now());
-            
+
             // Set end date based on billing cycle
             if (billingCycle.equals("monthly")) {
                 subscription.setEndDate(LocalDateTime.now().plusMonths(1));
             } else {
                 subscription.setEndDate(LocalDateTime.now().plusYears(1));
             }
-            
+
             // Set AI limits based on plan
             if (planType.equals("pro")) {
                 // Update startup's daily AI limit
@@ -415,15 +416,15 @@ public class PaymentService {
                 startup.setDailyAiLimit(200); // Enterprise daily limit
                 startupRepository.save(startup);
             }
-            
+
             subscription.setPrice(payment.getAmount());
-            
+
             subscriptionRepository.save(subscription);
-            
+
             // Link payment to subscription
             payment.setSubscriptionId(startupId);
             paymentRepository.save(payment);
-            
+
             // Send subscription activation notification to founder
             try {
                 String founderPhone = resolveFounderPhone(payment.getStartup());
@@ -441,12 +442,12 @@ public class PaymentService {
             } catch (Exception ex) {
                 logger.error("Failed to send subscription activation notification: {}", ex.getMessage());
             }
-            
+
         } catch (Exception e) {
             throw new ApiException("Failed to create subscription from payment: " + e.getMessage());
         }
     }
-    
+
     /**
      * Update freelancer earnings when project payment is completed
      */
@@ -459,7 +460,7 @@ public class PaymentService {
             }
         }
     }
-    
+
     /**
      * Update advisor earnings when session payment is completed
      */
@@ -472,7 +473,7 @@ public class PaymentService {
             }
         }
     }
-    
+
     /**
      * Activate advisor session after successful payment
      */
@@ -485,7 +486,7 @@ public class PaymentService {
             }
         }
     }
-    
+
     /**
      * Activate freelancer project after successful payment
      */
@@ -499,7 +500,7 @@ public class PaymentService {
             }
         }
     }
-    
+
     /**
      * Cancel a startup's active subscription
      */
@@ -509,38 +510,38 @@ public class PaymentService {
         if (startup == null) {
             throw new ApiException("Startup not found");
         }
-        
+
         // Find and delete subscription completely
         Subscription subscription = subscriptionRepository.findSubscriptionById(startupId);
         if (subscription == null) {
             throw new ApiException("No subscription found for this startup");
         }
-        
+
         if (!"active".equals(subscription.getStatus())) {
             throw new ApiException("Subscription is not active. Current status: " + subscription.getStatus());
         }
-        
+
         // Store subscription details for notification before deletion
         String planType = subscription.getPlanType();
         String billingCycle = subscription.getBillingCycle();
-        
+
         // Properly handle the bidirectional relationship
         // Since @OneToOne with @PrimaryKeyJoinColumn, we need to clear the reference
         // This prevents JPA from trying to maintain the relationship
         startup.setSubscription(null);
-        
+
         // Reset startup to free tier daily limits
         startup.setDailyAiLimit(10); // Reset to free tier
         startupRepository.save(startup);
-        
+
         // Now we can safely delete the subscription
         subscriptionRepository.delete(subscription);
-        
+
         // Verify the subscription was deleted
         if (subscriptionRepository.findSubscriptionById(startupId) != null) {
             throw new ApiException("Failed to delete subscription");
         }
-        
+
         // Send WhatsApp confirmation message to founder
         try {
             String founderPhone = resolveFounderPhone(startup);
@@ -557,7 +558,7 @@ public class PaymentService {
             logger.error("Failed to send WhatsApp cancellation confirmation: {}", ex.getMessage());
         }
     }
-    
+
     /**
      * Get subscription status for a startup
      */
@@ -567,16 +568,16 @@ public class PaymentService {
         if (startup == null) {
             throw new ApiException("Startup not found");
         }
-        
+
         // Find subscription
         Subscription subscription = subscriptionRepository.findSubscriptionById(startupId);
         if (subscription == null) {
             throw new ApiException("No subscription found for this startup");
         }
-        
+
         return subscription;
     }
-    
+
     /**
      * Scheduled task to handle subscription renewals
      * Runs daily at midnight to check for expired subscriptions
@@ -588,13 +589,13 @@ public class PaymentService {
             logger.info("[Scheduler] Starting daily subscription renewal check...");
             // Find all active subscriptions that are expiring today or have expired
             List<Subscription> expiringSubscriptions = subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
-            
+
             for (Subscription subscription : expiringSubscriptions) {
                 try {
-                    logger.info("[Scheduler] Processing renewal for startupId={}, plan={}, cycle={}", 
-                        subscription.getStartup() != null ? subscription.getStartup().getId() : null,
-                        subscription.getPlanType(), 
-                        subscription.getBillingCycle());
+                    logger.info("[Scheduler] Processing renewal for startupId={}, plan={}, cycle={}",
+                            subscription.getStartup() != null ? subscription.getStartup().getId() : null,
+                            subscription.getPlanType(),
+                            subscription.getBillingCycle());
                     processSubscriptionRenewal(subscription);
                 } catch (Exception e) {
                     // Continue with other subscriptions even if one fails
@@ -607,7 +608,7 @@ public class PaymentService {
             logger.error("[Scheduler] Renewal job failed: {}", e.getMessage());
         }
     }
-    
+
     /**
      * Process renewal for a single subscription
      */
@@ -618,22 +619,23 @@ public class PaymentService {
         if (!hasStoredCard(startup)) {
             try {
                 cancelSubscription(startup.getId());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
 
-                            try {
-                    String founderPhone = resolveFounderPhone(startup);
-                    String message = "🚫 تم إلغاء اشتراكك\n\n" +
-                            "السبب: معلومات الدفع غير متوفرة\n\n" +
-                            "للمتابعة، يرجى إعادة الاشتراك مع تحديث بيانات البطاقة\n\n" +
-                            "شكراً لك";
-                    logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, message);
-                    if (founderPhone != null) {
-                        whatsappService.sendTextMessage(message, founderPhone);
-                    }
-                    logger.info("[Scheduler] Subscription cancelled due to missing card data. Notified: {}", founderPhone);
-                } catch (Exception ex) {
-                    logger.error("[Scheduler] Failed to send WhatsApp cancel notification: {}", ex.getMessage());
+            try {
+                String founderPhone = resolveFounderPhone(startup);
+                String message = "🚫 تم إلغاء اشتراكك\n\n" +
+                        "السبب: معلومات الدفع غير متوفرة\n\n" +
+                        "للمتابعة، يرجى إعادة الاشتراك مع تحديث بيانات البطاقة\n\n" +
+                        "شكراً لك";
+                logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, message);
+                if (founderPhone != null) {
+                    whatsappService.sendTextMessage(message, founderPhone);
                 }
+                logger.info("[Scheduler] Subscription cancelled due to missing card data. Notified: {}", founderPhone);
+            } catch (Exception ex) {
+                logger.error("[Scheduler] Failed to send WhatsApp cancel notification: {}", ex.getMessage());
+            }
             return;
         }
 
@@ -706,14 +708,14 @@ public class PaymentService {
             return null;
         }
     }
-    
+
     /**
      * Send payment completion notifications to relevant parties
      */
     private void sendPaymentCompletionNotification(Payment payment, String paymentType) {
         try {
             Startup startup = payment.getStartup();
-            
+
             // Notify founder
             String founderPhone = resolveFounderPhone(startup);
             if (founderPhone != null) {
@@ -725,46 +727,46 @@ public class PaymentService {
                         "شكراً لك!";
                 whatsappService.sendTextMessage(founderMessage, founderPhone);
             }
-            
+
             // Notify service provider based on payment type
-              if ("freelancer_project".equals(paymentType) && payment.getFreelancerId() != null) {
-                  Freelancer freelancer = freelancerRepository.findFreelancerById(payment.getFreelancerId());
-                  if (freelancer != null && freelancer.getPhone() != null) {
-                      // Get project details for the message
-                      FreelancerProject project = null;
-                      if (payment.getFreelancerProjectId() != null) {
-                          project = freelancerProjectRepository.findFreelancerProjectById(payment.getFreelancerProjectId());
-                      }
-                      String projectName = project != null ? project.getProjectName() : "مشروع";
-                      
-                      String freelancerMessage = "💰 تم استلام الدفع\n" +
-                              "المشروع: " + projectName + "\n" +
-                              "المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
-                              "شكراً لك";
-                      whatsappService.sendTextMessage(freelancerMessage, freelancer.getPhone());
-                  }
-              } else if ("advisor_session".equals(paymentType) && payment.getAdvisorId() != null) {
-                  Advisor advisor = advisorRepository.findAdvisorById(payment.getAdvisorId());
-                  if (advisor != null && advisor.getPhone() != null) {
-                      // Get session details for the message
-                      AdvisorSession session = null;
-                      if (payment.getAdvisorSessionId() != null) {
-                          session = advisorSessionRepository.findAdvisorSessionById(payment.getAdvisorSessionId());
-                      }
-                      String sessionTitle = session != null && session.getTitle() != null ? session.getTitle() : "جلسة استشارية";
-                      
-                      String advisorMessage = "💰 تم استلام الدفع\n" +
-                              "الجلسة: " + sessionTitle + "\n" +
-                              "المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
-                              "شكراً لك";
-                      whatsappService.sendTextMessage(advisorMessage, advisor.getPhone());
-                  }
-              }
+            if ("freelancer_project".equals(paymentType) && payment.getFreelancerId() != null) {
+                Freelancer freelancer = freelancerRepository.findFreelancerById(payment.getFreelancerId());
+                if (freelancer != null && freelancer.getPhone() != null) {
+                    // Get project details for the message
+                    FreelancerProject project = null;
+                    if (payment.getFreelancerProjectId() != null) {
+                        project = freelancerProjectRepository.findFreelancerProjectById(payment.getFreelancerProjectId());
+                    }
+                    String projectName = project != null ? project.getProjectName() : "مشروع";
+
+                    String freelancerMessage = "💰 تم استلام الدفع\n" +
+                            "المشروع: " + projectName + "\n" +
+                            "المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
+                            "شكراً لك";
+                    whatsappService.sendTextMessage(freelancerMessage, freelancer.getPhone());
+                }
+            } else if ("advisor_session".equals(paymentType) && payment.getAdvisorId() != null) {
+                Advisor advisor = advisorRepository.findAdvisorById(payment.getAdvisorId());
+                if (advisor != null && advisor.getPhone() != null) {
+                    // Get session details for the message
+                    AdvisorSession session = null;
+                    if (payment.getAdvisorSessionId() != null) {
+                        session = advisorSessionRepository.findAdvisorSessionById(payment.getAdvisorSessionId());
+                    }
+                    String sessionTitle = session != null && session.getTitle() != null ? session.getTitle() : "جلسة استشارية";
+
+                    String advisorMessage = "💰 تم استلام الدفع\n" +
+                            "الجلسة: " + sessionTitle + "\n" +
+                            "المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
+                            "شكراً لك";
+                    whatsappService.sendTextMessage(advisorMessage, advisor.getPhone());
+                }
+            }
         } catch (Exception ex) {
             logger.error("Failed to send payment completion notifications: {}", ex.getMessage());
         }
     }
-    
+
     /**
      * Get payment type in Arabic for notifications
      */
@@ -780,7 +782,7 @@ public class PaymentService {
                 return "خدمة";
         }
     }
-    
+
     /**
      * Get all active subscriptions that are expiring soon (within 1 day)
      */
@@ -796,28 +798,28 @@ public class PaymentService {
             // Parse the JSON payload
             ObjectMapper mapper = new ObjectMapper();
             JsonNode webhookData = mapper.readTree(payload);
-            
+
             // Verify webhook secret token
             String secretToken = webhookData.path("secret_token").asText();
             if (!webhookSecret.equals(secretToken)) {
                 throw new ApiException("Invalid webhook secret token");
             }
-            
+
             // Extract payment information
             String type = webhookData.path("type").asText();
-            
+
             // Handle payment_paid events
             if ("payment_paid".equals(type)) {
                 JsonNode paymentData = webhookData.path("data");
                 String paymentId = paymentData.path("id").asText();
                 String status = paymentData.path("status").asText();
-                
+
                 logger.info("[Webhook] Processing payment_paid: {} with status: {}", paymentId, status);
                 handlePaymentCompletion(paymentId, status);
             } else {
                 logger.info("[Webhook] Ignoring non-payment_paid event: {}", type);
             }
-            
+
         } catch (Exception e) {
             throw new ApiException("Failed to process webhook: " + e.getMessage());
         }

@@ -36,7 +36,7 @@ public class StartupController {
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateStartup(@PathVariable Integer id, @Valid @RequestBody StartupDTO startupDTO) {
         startupService.updateStartup(id, startupDTO);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse("Startup updated successfully") );
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse("Startup updated successfully"));
     }
 
     @DeleteMapping("/delete/{id}")

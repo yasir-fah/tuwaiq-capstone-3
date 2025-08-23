@@ -14,21 +14,21 @@ public class InvestorService {
     private final InvestorRepository investorRepository;
 
     // get method:
-    public List<Investor> getAllInvestors(){
+    public List<Investor> getAllInvestors() {
         return investorRepository.findAll();
     }
 
     // post method:
-    public void addInvestor(Investor investor){
+    public void addInvestor(Investor investor) {
         investorRepository.save(investor);
     }
 
     // update method:
-    public void updateInvestor(Integer id, Investor investor){
+    public void updateInvestor(Integer id, Investor investor) {
 
         // 1- check if investor exist:
         Investor oldInvestor = investorRepository.findInvestorById(id);
-        if(oldInvestor == null){
+        if (oldInvestor == null) {
             throw new ApiException("investor not found");
         }
 
@@ -42,11 +42,11 @@ public class InvestorService {
         investorRepository.save(oldInvestor);
     }
 
-    public void deleteInvestor(Integer id){
+    public void deleteInvestor(Integer id) {
 
         // 1- check if investor exist:
         Investor investor = investorRepository.findInvestorById(id);
-        if(investor == null){
+        if (investor == null) {
             throw new ApiException("investor not found");
         }
 

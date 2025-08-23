@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 public class EmailService {
     private final JavaMailSender mailSender;
 
-    public void sendEmail(String from,String to, String subject, String text){
+    public void sendEmail(String from, String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
 
         message.setFrom(from);

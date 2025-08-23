@@ -29,13 +29,13 @@ public class FirefliesAiApiService {
         String transcriptId = findTranscriptIdByMeetingLink(link);
 
         String query = """
-        query Transcript($transcriptId: String!) {
-          transcript(id: $transcriptId) {
-            summary {   short_summary
-            }
-          }
-        }
-        """;
+                query Transcript($transcriptId: String!) {
+                  transcript(id: $transcriptId) {
+                    summary {   short_summary
+                    }
+                  }
+                }
+                """;
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("query", query);
@@ -62,7 +62,6 @@ public class FirefliesAiApiService {
                                 .path("short_summary");
 
 
-
                         return summaryNode.asText();
                     } catch (Exception e) {
 
@@ -77,13 +76,13 @@ public class FirefliesAiApiService {
         String transcriptId = findTranscriptIdByMeetingLink(link);
 
         String query = """
-        query Transcript($transcriptId: String!) {
-          transcript(id: $transcriptId) {
-            summary {   bullet_gist
-            }
-          }
-        }
-        """;
+                query Transcript($transcriptId: String!) {
+                  transcript(id: $transcriptId) {
+                    summary {   bullet_gist
+                    }
+                  }
+                }
+                """;
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("query", query);
@@ -110,7 +109,6 @@ public class FirefliesAiApiService {
                                 .path("bullet_gist");
 
 
-
                         return topicsNode.asText();
                     } catch (Exception e) {
 
@@ -127,13 +125,13 @@ public class FirefliesAiApiService {
         String transcriptId = findTranscriptIdByMeetingLink(link);
 
         String query = """
-        query Transcript($transcriptId: String!) {
-          transcript(id: $transcriptId) {
-            summary {   action_items
-            }
-          }
-        }
-        """;
+                query Transcript($transcriptId: String!) {
+                  transcript(id: $transcriptId) {
+                    summary {   action_items
+                    }
+                  }
+                }
+                """;
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("query", query);
@@ -160,7 +158,6 @@ public class FirefliesAiApiService {
                                 .path("action_items");
 
 
-
                         return actionItemsNode.asText();
                     } catch (Exception e) {
 
@@ -169,16 +166,17 @@ public class FirefliesAiApiService {
                 })
                 .block();
     }
+
     public String findTranscriptIdByMeetingLink(String targetMeetingLink) {
         String query = """
-        query {
-          transcripts {
-            meeting_link
-            id
-            title
-          }
-        }
-        """;
+                query {
+                  transcripts {
+                    meeting_link
+                    id
+                    title
+                  }
+                }
+                """;
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("query", query);
@@ -220,12 +218,12 @@ public class FirefliesAiApiService {
 
     public String getAudioUrl(String targetMeetingLink) {
         String query = """
-                query Transcript($transcriptId: String!) {
-                    transcript(id: $transcriptId) {
-                      audio_url
-                    }
-                  }
-        """;
+                        query Transcript($transcriptId: String!) {
+                            transcript(id: $transcriptId) {
+                              audio_url
+                            }
+                          }
+                """;
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("query", query);
         Map<String, Object> variables = new HashMap<>();
@@ -247,7 +245,6 @@ public class FirefliesAiApiService {
                         JsonNode summaryNode = root.path("data")
                                 .path("transcript")
                                 .path("audio_url");
-
 
 
                         return summaryNode.asText();

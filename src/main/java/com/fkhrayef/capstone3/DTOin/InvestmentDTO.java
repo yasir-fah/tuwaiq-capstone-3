@@ -14,9 +14,6 @@ import java.util.Date;
 @NoArgsConstructor
 public class InvestmentDTO {
 
-
-
-
     @NotNull
     private Integer investor_id;
     @NotNull
@@ -31,7 +28,8 @@ public class InvestmentDTO {
     private Date effectiveDate;
 
     @NotNull(message = "Investment Amount is required")
-    @Positive(message = "Investment Amount must be greater than zero") private Double investment_amount;
+    @Positive(message = "Investment Amount must be greater than zero")
+    private Double investment_amount;
 
     @NotEmpty(message = "Payment Method is required")
     @Pattern(regexp = "^(?i)(check|transfer)$")

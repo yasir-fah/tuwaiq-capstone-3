@@ -8,7 +8,6 @@ import com.fkhrayef.capstone3.Model.Startup;
 import com.fkhrayef.capstone3.Repository.FreelancerProjectRepository;
 import com.fkhrayef.capstone3.Repository.FreelancerRepository;
 import com.fkhrayef.capstone3.Repository.StartupRepository;
-import com.fkhrayef.capstone3.Service.WhatsappService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -28,38 +27,35 @@ public class FreelancerProjectService {
     private final WhatsappService whatsappService;
 
     // list of freelancerProject from certain startup:
-    public List<FreelancerProject> getAllFreelancerProject(Integer startupId){
+    public List<FreelancerProject> getAllFreelancerProject(Integer startupId) {
 
         // 1- find the desired startup:
         Startup startup = startupRepository.findStartupById(startupId);
-        if(startup == null){
+        if (startup == null) {
             throw new ApiException("startup not found");
         }
 
         // 2- fetch the freelancerProjects from desired startup:
         List<FreelancerProject> freelancerProjects = freelancerProjectRepository.giveMeFreelancerProjectByStartupId(startupId);
-//        if(freelancerProjects.isEmpty()){
-//            throw new ApiException("this startup has no freelancer projects");
-//        }
 
         return freelancerProjects;
     }
 
 
     /// add project by startup with a specific freelancer
-    public void addFreelancerProjectByStartup(Integer startupId, Integer freelancerId, FreelancerProjectDTO freelancerProjectDTO){
+    public void addFreelancerProjectByStartup(Integer startupId, Integer freelancerId, FreelancerProjectDTO freelancerProjectDTO) {
 
         //1- check if startup exist:
         Startup startup = startupRepository.findStartupById(startupId);
-        if(startup == null){
+        if (startup == null) {
             throw new ApiException("startup not found");
         }
 
         // 2- prevent startup from have multiple project with same name & description:
         FreelancerProject project = freelancerProjectRepository.
                 findFreelancerProjectByProjectNameAndDescriptionAndStartupId
-                        (freelancerProjectDTO.getProjectName(),freelancerProjectDTO.getDescription(),startup.getId());
-        if(project != null){
+                        (freelancerProjectDTO.getProjectName(), freelancerProjectDTO.getDescription(), startup.getId());
+        if (project != null) {
             throw new ApiException("there is similar project");
         }
 
@@ -76,7 +72,7 @@ public class FreelancerProjectService {
         freelancerProject.setStartDate(freelancerProjectDTO.getStartDate());
         freelancerProject.setEndDate(freelancerProjectDTO.getEndDate());
         freelancerProject.setStatus("pending"); // Start as pending, becomes active after payment
-        
+
         // Add pricing fields
         freelancerProject.setEstimatedHours(freelancerProjectDTO.getEstimatedHours());
 
@@ -84,7 +80,7 @@ public class FreelancerProjectService {
         freelancerProject.setStartup(startup);
         freelancerProject.setFreelancer(freelancer);
         freelancerProjectRepository.save(freelancerProject);
-        
+
         // 6- Send WhatsApp notification to freelancer about new project request
         try {
             if (freelancer.getPhone() != null) {
@@ -102,27 +98,27 @@ public class FreelancerProjectService {
     }
 
     /// make the freelancer accepts the project:
-    public void freelancerAcceptFreelancerProject(Integer freelanceId, Integer projectId){
+    public void freelancerAcceptFreelancerProject(Integer freelanceId, Integer projectId) {
 
         // 1- check if freelancer exist:
         Freelancer freelancer = freelancerRepository.findFreelancerById(freelanceId);
-        if(freelancer == null){
+        if (freelancer == null) {
             throw new ApiException("freelancer not exist");
         }
 
         // 2- check if project exist;
         FreelancerProject project = freelancerProjectRepository.findFreelancerProjectById(projectId);
-        if(project == null){
+        if (project == null) {
             throw new ApiException("project not found");
         }
 
         // 3- check if project & freelancer are belong to each other:
-        if(project.getFreelancer().getId() == null || !project.getFreelancer().getId().equals(freelancer.getId())){
+        if (project.getFreelancer().getId() == null || !project.getFreelancer().getId().equals(freelancer.getId())) {
             throw new ApiException("freelancer does not belong to this project");
         }
 
         // 4- check from project status;
-        if(!project.getStatus().equals("pending")){
+        if (!project.getStatus().equals("pending")) {
             throw new ApiException("project status should be pending");
         }
 
@@ -133,27 +129,27 @@ public class FreelancerProjectService {
 
 
     /// make freelancer reject project request:
-    public void freelancerRejectFreelancerProject(Integer freelanceId, Integer projectId){
+    public void freelancerRejectFreelancerProject(Integer freelanceId, Integer projectId) {
 
         // 1- check if freelancer exist:
         Freelancer freelancer = freelancerRepository.findFreelancerById(freelanceId);
-        if(freelancer == null){
+        if (freelancer == null) {
             throw new ApiException("freelancer not exist");
         }
 
         // 2- check if project exist;
         FreelancerProject project = freelancerProjectRepository.findFreelancerProjectById(projectId);
-        if(project == null){
+        if (project == null) {
             throw new ApiException("project not found");
         }
 
         // 3- check if project & freelancer are belong to each other:
-        if(project.getFreelancer().getId() == null || !project.getFreelancer().getId().equals(freelancer.getId())){
+        if (project.getFreelancer().getId() == null || !project.getFreelancer().getId().equals(freelancer.getId())) {
             throw new ApiException("freelancer does not belong to this project");
         }
 
         // 4- check from project status;
-        if(!project.getStatus().equals("pending")){
+        if (!project.getStatus().equals("pending")) {
             throw new ApiException("project status should be pending");
         }
 
@@ -164,28 +160,28 @@ public class FreelancerProjectService {
 
 
     /// allow the startup to cancel request & break relation with freelance:
-    public void startupCancelFreelanceRequest(Integer startupId, Integer projectId){
+    public void startupCancelFreelanceRequest(Integer startupId, Integer projectId) {
 
         // 1- check if startup exist:
         Startup startup = startupRepository.findStartupById(startupId);
-        if(startup == null){
+        if (startup == null) {
             throw new ApiException("startup not found");
         }
 
         // 2- check if project exist:
         FreelancerProject project = freelancerProjectRepository.findFreelancerProjectById(projectId);
-        if(project == null){
+        if (project == null) {
             throw new ApiException("project not found");
         }
 
         // 3- check the project belong to the same startup
-        if(project.getStartup().getId() == null
-                || ! project.getStartup().getId().equals(startup.getId())){
+        if (project.getStartup().getId() == null
+                || !project.getStartup().getId().equals(startup.getId())) {
             throw new ApiException("project and startup not belong to each other");
         }
 
         // 5- check if status still pending from freelancer:
-        if(!project.getStatus().equals("pending")){
+        if (!project.getStatus().equals("pending")) {
             throw new ApiException("status should be pending to cancel request");
         }
 
@@ -221,7 +217,7 @@ public class FreelancerProjectService {
         // 5- prevent duplicate name+description within the same startup (excluding this project)
         FreelancerProject dup = freelancerProjectRepository
                 .findFreelancerProjectByProjectNameAndDescriptionAndStartupId
-                        (dto.getProjectName(), dto.getDescription(),startupId);
+                        (dto.getProjectName(), dto.getDescription(), startupId);
         if (dup != null
                 && dup.getId() != null
                 && !dup.getId().equals(project.getId())
@@ -235,7 +231,7 @@ public class FreelancerProjectService {
         project.setDescription(dto.getDescription());
         project.setStartDate(dto.getStartDate());
         project.setEndDate(dto.getEndDate());
-        
+
         // Update pricing fields
         project.setEstimatedHours(dto.getEstimatedHours());
 
@@ -244,9 +240,8 @@ public class FreelancerProjectService {
     }
 
 
-
     ///  delete project with in both sides (startup & freelancer)
-    public void deleteFreelancerProject(Integer projectId, Integer startupId){
+    public void deleteFreelancerProject(Integer projectId, Integer startupId) {
 
         // 1-  check project exists
         FreelancerProject project = freelancerProjectRepository.findFreelancerProjectById(projectId);
@@ -276,10 +271,6 @@ public class FreelancerProjectService {
         freelancerProjectRepository.delete(project);
 
     }
-
-
-
-
 
 
 }

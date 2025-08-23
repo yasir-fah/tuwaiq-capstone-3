@@ -9,7 +9,6 @@ import com.fkhrayef.capstone3.Repository.AdvisorRepository;
 import com.fkhrayef.capstone3.Repository.AdvisorSessionRepository;
 import com.fkhrayef.capstone3.Repository.PaymentRepository;
 import com.fkhrayef.capstone3.Repository.StartupRepository;
-import com.fkhrayef.capstone3.Service.WhatsappService;
 import lombok.RequiredArgsConstructor;
 import okhttp3.Response;
 import org.springframework.stereotype.Service;
@@ -81,25 +80,25 @@ public class AdvisorSessionService {
         advisorSession.setNotes(dto.getNotes());
         advisorSession.setStatus("pending");
 
-       // 5- link session with startup & advisor then save the session:
-       advisorSession.setStartup(startup);
-       advisorSession.setAdvisor(advisor);
-       advisorSessionRepository.save(advisorSession);
+        // 5- link session with startup & advisor then save the session:
+        advisorSession.setStartup(startup);
+        advisorSession.setAdvisor(advisor);
+        advisorSessionRepository.save(advisorSession);
 
-       // 6- Send WhatsApp notification to advisor about new request
-       try {
-           if (advisor.getPhone() != null) {
-               String message = "🔔 طلب جلسة استشارية جديد\n" +
-                       "الشركة: " + startup.getName() + "\n" +
-                       "الجلسة: " + dto.getTitle() + "\n" +
-                       "يرجى مراجعة الطلب والرد عليه";
-               whatsappService.sendTextMessage(message, advisor.getPhone());
-           }
-               } catch (Exception ex) {
+        // 6- Send WhatsApp notification to advisor about new request
+        try {
+            if (advisor.getPhone() != null) {
+                String message = "🔔 طلب جلسة استشارية جديد\n" +
+                        "الشركة: " + startup.getName() + "\n" +
+                        "الجلسة: " + dto.getTitle() + "\n" +
+                        "يرجى مراجعة الطلب والرد عليه";
+                whatsappService.sendTextMessage(message, advisor.getPhone());
+            }
+        } catch (Exception ex) {
             // Log error but don't fail the main operation
             logger.error("Failed to send WhatsApp notification: {}", ex.getMessage());
         }
-   }
+    }
 
     /// 3- advisor accepts session:
     public void advisorAcceptAdvisorSession(Integer advisorId, Integer sessionId) {
@@ -180,7 +179,7 @@ public class AdvisorSessionService {
 
         // 3- check session belongs to same startup
         if (session.getStartup().getId() == null
-            || !session.getStartup().getId().equals(startup.getId())) {
+                || !session.getStartup().getId().equals(startup.getId())) {
             throw new ApiException("session and startup not belong to each other");
         }
 
@@ -224,10 +223,10 @@ public class AdvisorSessionService {
                         startupId, dto.getStartDate(), dto.getNotes());
 
         if (dup != null
-            && dup.getId() != null
-            && !dup.getId().equals(session.getId())
-            && dup.getStartup() != null
-            && dup.getStartup().getId().equals(startup.getId())) {
+                && dup.getId() != null
+                && !dup.getId().equals(session.getId())
+                && dup.getStartup() != null
+                && dup.getStartup().getId().equals(startup.getId())) {
             throw new ApiException("another session with same startDate and notes already exists");
         }
 
@@ -297,7 +296,7 @@ public class AdvisorSessionService {
 
 
                 session.setMeeting_id(root.get("id").asText());
-                session.setMeeting_url( root.get("webLink").asText());
+                session.setMeeting_url(root.get("webLink").asText());
             }
         } catch (Exception e) {
             throw new ApiException("Failed to start meeting");
@@ -350,20 +349,20 @@ public class AdvisorSessionService {
     public List<AdvisorSession> getAllAdvisorSessionsFromEmail(String email) {
         List<AdvisorSession> sessions = new ArrayList<>();
         for (AdvisorSession session : advisorSessionRepository.findAll()) {
-            if(getAllEmails(session.getId()).contains(email)){
+            if (getAllEmails(session.getId()).contains(email)) {
                 sessions.add(session);
             }
         }
         return sessions;
     }
 
-    public String getAudioUrl(String meetingLink){
+    public String getAudioUrl(String meetingLink) {
         return firefliesAiApiService.getAudioUrl(meetingLink);
     }
 
-    public byte[] addToCalender(Integer sessionId){
+    public byte[] addToCalender(Integer sessionId) {
         AdvisorSession session = advisorSessionRepository.findAdvisorSessionById(sessionId);
-        if (session == null){
+        if (session == null) {
             throw new ApiException("session not found");
         }
 
@@ -373,23 +372,35 @@ public class AdvisorSessionService {
         String createdTime = LocalDateTime.now().atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneId.of("UTC")).format(formatter);
 
         String icalContent = "BEGIN:VCALENDAR\n" +
-                             "VERSION:2.0\r\n" +
-                             "PRODID:-//StartHub//Advisor session//EN\n" +
-                             "BEGIN:VEVENT\n" +
-                             "UID:" + System.currentTimeMillis() + session.getStartup().getName() +"\n" +
-                             "DTSTAMP:" + createdTime + "\n" +
-                             "DTSTART:" + startTime + "\n" +
-                             "DTEND:" + endTime + "\n" +
-                             "SUMMARY:" + session.getTitle() + "\n" +
-                             "DESCRIPTION:" + session.getNotes()  + "\n" +
-                             "URL: " + session.getMeeting_url() + "\n" +
-                             "STATUS:CONFIRMED\n" +
-                             "SEQUENCE:0\n" +
-                             "END:VEVENT\n" +
-                             "END:VCALENDAR\n";
+                "VERSION:2.0\r\n" +
+                "PRODID:-//StartHub//Advisor session//EN\n" +
+                "BEGIN:VEVENT\n" +
+                "UID:" + System.currentTimeMillis() + session.getStartup().getName() + "\n" +
+                "DTSTAMP:" + createdTime + "\n" +
+                "DTSTART:" + startTime + "\n" +
+                "DTEND:" + endTime + "\n" +
+                "SUMMARY:" + session.getTitle() + "\n" +
+                "DESCRIPTION:" + session.getNotes() + "\n" +
+                "URL: " + session.getMeeting_url() + "\n" +
+                "STATUS:CONFIRMED\n" +
+                "SEQUENCE:0\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR\n";
 
         return icalContent.getBytes(StandardCharsets.UTF_8);
 
+    }
+
+    public List<AdvisorSession> getByStatusAndAdvisor(String status, Integer advisorId) {
+        Advisor advisor = advisorRepository.findAdvisorById(advisorId);
+        if (advisor == null) {
+            throw new ApiException("advisor not found");
+        }
+        List<AdvisorSession> sessions = advisorSessionRepository.findAdvisorSessionsByAdvisorAndStatus(advisor, status);
+        if (sessions == null) {
+            throw new ApiException("no session was found with that status");
+        }
+        return sessions;
     }
 
 }

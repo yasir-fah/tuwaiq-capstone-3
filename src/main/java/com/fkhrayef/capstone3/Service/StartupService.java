@@ -41,10 +41,10 @@ public class StartupService {
         startup.setEmployeeCount(startupDTO.getEmployeeCount());
         startup.setValuation(startupDTO.getValuation());
         startup.setStatus("active");
-        
+
         startup.setDailyAiUsageCount(0);
         startup.setDailyAiLimit(10);
-        
+
         startupRepository.save(startup);
 
         // Link founder to startup
@@ -59,7 +59,7 @@ public class StartupService {
         if (startup == null) {
             throw new ApiException("Startup not found with id: " + startupId);
         }
-        
+
         Founder founder = founderRepository.findFounderById(founderId);
         if (founder == null) {
             throw new ApiException("Founder not found with id: " + founderId);
@@ -77,10 +77,10 @@ public class StartupService {
         double currentTotalEquity = startup.getFounders().stream()
                 .mapToDouble(Founder::getEquityPercentage)
                 .sum();
-        
+
         // ALWAYS redistribute equity proportionally to maintain 100% total
         double redistributionRatio = (100.0 - equityPercentage) / currentTotalEquity;
-        
+
         // Update existing founders' equity proportionally
         for (Founder existingFounder : startup.getFounders()) {
             double newEquity = existingFounder.getEquityPercentage() * redistributionRatio;

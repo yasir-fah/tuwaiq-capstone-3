@@ -13,6 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PaymentRequest {
+    
     @NotBlank(message = "Cardholder name is required")
     private String name;
 

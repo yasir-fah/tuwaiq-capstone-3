@@ -19,8 +19,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Check(constraints = "status IN ('pending', 'accepted', 'active', 'completed') and " +
-                    "total_amount >= 0 and " +
-                    "estimated_hours >= 0")
+        "total_amount >= 0 and " +
+        "estimated_hours >= 0")
 public class FreelancerProject {
 
     @Id

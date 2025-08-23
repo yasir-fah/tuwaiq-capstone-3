@@ -42,7 +42,7 @@ public class FileService {
         pdfServices = new PDFServices(credentials);
     }
 
-    public void createContract(ContractDTO contractDTO, String contractPath) throws ApiException{
+    public void createContract(ContractDTO contractDTO, String contractPath) throws ApiException {
         InputStream inputStream;
         Asset asset;
         JSONObject jsonDataForMerge;
@@ -72,11 +72,11 @@ public class FileService {
 
             byte[] fileContent = IOUtils.toByteArray(streamAsset.getInputStream());
 
-            String s3Key = contractPath +"_"+contractDTO.getStartup_name().trim().replaceAll("\\s+", "_")
-                           +"_"+contractDTO.getInvestor_name().trim().replaceAll("\\s+", "_")+".pdf";
+            String s3Key = contractPath + "_" + contractDTO.getStartup_name().trim().replaceAll("\\s+", "_")
+                    + "_" + contractDTO.getInvestor_name().trim().replaceAll("\\s+", "_") + ".pdf";
 
             s3Service.upload(s3Key, fileContent, "application/pdf");
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new ApiException(e.getMessage());
         }
 
