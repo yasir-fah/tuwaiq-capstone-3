@@ -13,8 +13,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-// TODO Should have DTOin because we don't take the ai limit, status
-
 @Getter
 @Setter
 @AllArgsConstructor
@@ -30,9 +28,6 @@ public class Subscription {
 
     @Column(columnDefinition = "VARCHAR(15) NOT NULL")
     private String planType;
-
-    @Column(columnDefinition = "INTEGER DEFAULT 0")
-    private Integer aiLimit;
 
     @Column(columnDefinition = "VARCHAR(15) NOT NULL")
     private String billingCycle;

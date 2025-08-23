@@ -26,7 +26,6 @@ public class FounderService {
         founder.setPhone(founderDTO.getPhone());
         founder.setEquityPercentage(0.0);
         founder.setHasStartup(false);
-        founder.setAiUsageCount(0);
 
         founderRepository.save(founder);
     }

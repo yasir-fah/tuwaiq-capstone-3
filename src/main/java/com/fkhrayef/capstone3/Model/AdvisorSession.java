@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 @Check( constraints = "duration_minutes > 0 and " +
                       "status IN ('pending', 'scheduled', 'confirmed', 'in_progress', 'completed') and " +
                       "session_cost >= 0")
-//todo DTO
 public class AdvisorSession {
 
     @Id

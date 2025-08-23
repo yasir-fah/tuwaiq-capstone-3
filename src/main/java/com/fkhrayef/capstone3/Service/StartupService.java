@@ -41,6 +41,10 @@ public class StartupService {
         startup.setEmployeeCount(startupDTO.getEmployeeCount());
         startup.setValuation(startupDTO.getValuation());
         startup.setStatus("active");
+        
+        startup.setDailyAiUsageCount(0);
+        startup.setDailyAiLimit(10);
+        
         startupRepository.save(startup);
 
         // Link founder to startup

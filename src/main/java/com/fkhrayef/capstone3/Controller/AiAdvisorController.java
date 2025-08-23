@@ -81,7 +81,7 @@ public class AiAdvisorController {
 
     // Single helper method for all endpoints
     private ResponseEntity<?> getAdvice(AiAdvisorDTO request, String template) {
-        String response = aiService.chat(template, request.getPrompt());
+        String response = aiService.chat(template, request.getPrompt(), request.getStartupId());
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

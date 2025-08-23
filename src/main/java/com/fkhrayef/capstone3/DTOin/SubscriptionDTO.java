@@ -13,7 +13,7 @@ public class SubscriptionDTO {
     private Integer founderId;
 
     @NotEmpty(message = "Plan Type cannot be null")
-    @Pattern(regexp = "^(free|pro|enterprise)$",  message = "Plan Type must be either free, pro or enterprise") // TODO enterprise means everyone working for the startup of the founder gets unlimited AI requests?
+    @Pattern(regexp = "^(free|pro|enterprise)$",  message = "Plan Type must be either free, pro or enterprise")
     private String planType;
 
     @NotEmpty(message = "Billing Cycle cannot be null")

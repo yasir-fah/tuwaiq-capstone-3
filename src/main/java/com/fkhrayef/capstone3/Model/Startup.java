@@ -72,6 +72,13 @@ public class Startup {
     @PrimaryKeyJoinColumn
     private Subscription subscription;
 
+    // AI usage tracking fields
+    @Column(columnDefinition = "INTEGER DEFAULT 0")
+    private Integer dailyAiUsageCount; // Current daily usage
+
+    @Column(columnDefinition = "INTEGER DEFAULT 10")
+    private Integer dailyAiLimit; // Default free tier limit (10 calls/day)
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

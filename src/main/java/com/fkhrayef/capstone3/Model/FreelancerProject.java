@@ -12,7 +12,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-// todo DTOin
+
 @Setter
 @Getter
 @AllArgsConstructor

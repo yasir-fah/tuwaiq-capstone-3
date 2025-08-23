@@ -42,6 +42,6 @@ public class StartupController {
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteStartup(@PathVariable Integer id) {
         startupService.deleteStartup(id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse("Startup deleted successfully") );
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse("Startup deleted successfully"));
     }
 }
