@@ -1,5 +1,6 @@
 package com.fkhrayef.capstone3.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -10,14 +11,17 @@ import java.util.Properties;
 @Configuration
 public class MailConfig {
 
+    @Value("${SMTP_PASSWORD}")
+    String smtpPassword;
+
     @Bean
     public JavaMailSender getJavaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost("smtp.gmail.com");
         mailSender.setPort(587);
 
-        mailSender.setUsername("Your-email@gmail.com");
-        mailSender.setPassword("Your App Password ************");
+        mailSender.setUsername("starthub11@gmail.com");
+        mailSender.setPassword(smtpPassword);
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");

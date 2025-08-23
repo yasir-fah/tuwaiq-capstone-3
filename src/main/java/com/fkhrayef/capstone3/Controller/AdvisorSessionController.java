@@ -5,7 +5,7 @@ import com.fkhrayef.capstone3.DTOin.AdvisorSessionDTO;
 import com.fkhrayef.capstone3.Service.AdvisorSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -77,11 +77,47 @@ public class AdvisorSessionController {
         return ResponseEntity.status(200).body(new ApiResponse("Meeting was created successfully, Check your email for the meeting link"));
     }
 
-    @GetMapping("/get-summary/")
+    @DeleteMapping("/delete/meeting/{sessionId}")
+    public ResponseEntity<?> deleteMeeting(@PathVariable Integer sessionId){
+        advisorSessionService.deleteMeeting(sessionId);
+        return ResponseEntity.status(200).body(new ApiResponse("Meeting was deleted successfully"));
+    }
+
+    @GetMapping("/get/all-from-email/{email}")
+    public ResponseEntity<?> getAllAdvisorSessionsFromEmail(@PathVariable String email){
+        return ResponseEntity.status(200).body(advisorSessionService.getAllAdvisorSessionsFromEmail(email));
+    }
+
+    @GetMapping("/get/summary/")
     public ResponseEntity<?> getSummary(@RequestParam String link){
         return ResponseEntity.status(200).body(new ApiResponse(advisorSessionService.getSummary(link)));
     }
 
+    @GetMapping("/get/bullet-gist/")
+    public ResponseEntity<?> getBulletGist(@RequestParam String link){
+        return ResponseEntity.status(200).body(new ApiResponse(advisorSessionService.getBulletGist(link)));
+    }
+
+    @GetMapping("/get/action-items/")
+    public ResponseEntity<?> getActionItems(@RequestParam String link){
+        return ResponseEntity.status(200).body(new ApiResponse(advisorSessionService.getActionItems(link)));
+    }
+
+    @GetMapping("/get/audio-url/")
+    public ResponseEntity<?> getAudioUrl(@RequestParam String meetingLink){
+        return ResponseEntity.status(200).body(new ApiResponse(advisorSessionService.getAudioUrl(meetingLink)));
+    }
+
+    @PostMapping("/add/calender-event/{sessionId}")
+    public ResponseEntity<?> addToCalender(@PathVariable Integer sessionId){
+        byte[] fileContent = advisorSessionService.addToCalender(sessionId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/calendar"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename("advisor-session-" + sessionId + ".ics").build());
+
+        return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
+    }
 
 
 }
