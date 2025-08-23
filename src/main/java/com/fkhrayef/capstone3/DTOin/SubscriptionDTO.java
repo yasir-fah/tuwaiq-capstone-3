@@ -10,10 +10,11 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class SubscriptionDTO {
+
     private Integer founderId;
 
     @NotEmpty(message = "Plan Type cannot be null")
-    @Pattern(regexp = "^(free|pro|enterprise)$",  message = "Plan Type must be either free, pro or enterprise")
+    @Pattern(regexp = "^(free|pro|enterprise)$", message = "Plan Type must be either free, pro or enterprise")
     private String planType;
 
     @NotEmpty(message = "Billing Cycle cannot be null")

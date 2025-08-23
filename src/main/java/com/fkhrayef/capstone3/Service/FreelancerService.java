@@ -30,10 +30,10 @@ public class FreelancerService {
         freelancer.setHourlyRate(dto.getHourlyRate());
         freelancer.setIsAvailable(true);
         freelancer.setYearsExperience(dto.getYearsExperience());
-        
+
         // Set default value for earnings
         freelancer.setTotalEarnings(0.0);
-        
+
         freelancerRepository.save(freelancer);
     }
 
@@ -79,10 +79,10 @@ public class FreelancerService {
         }
 
         // 3- validate from status input:
-        if(!status.equals("pending")
+        if (!status.equals("pending")
                 && !status.equals("accepted")
                 && !status.equals("active")
-                && !status.equals("completed")){
+                && !status.equals("completed")) {
             throw new ApiException("status should be pending|accepted|active|completed");
         }
 
@@ -90,7 +90,7 @@ public class FreelancerService {
         List<FreelancerProject> freelancerProjects =
                 freelancerProjectRepository.
                         giveMeFreelancerProjectByFreelancerIdAndStatus
-                        (freelancer.getId(), status);
+                                (freelancer.getId(), status);
 
         return freelancerProjects;
     }

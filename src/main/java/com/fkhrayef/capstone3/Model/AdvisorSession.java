@@ -18,9 +18,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Check( constraints = "duration_minutes > 0 and " +
-                      "status IN ('pending', 'scheduled', 'confirmed', 'in_progress', 'completed') and " +
-                      "session_cost >= 0")
+@Check(constraints = "duration_minutes > 0 and " +
+        "status IN ('pending', 'scheduled', 'confirmed', 'in_progress', 'completed') and " +
+        "session_cost >= 0")
 public class AdvisorSession {
 
     @Id

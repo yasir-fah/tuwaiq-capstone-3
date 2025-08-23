@@ -21,7 +21,7 @@ public class AiService {
 
     public AiService(ChatClient.Builder chatClientBuilder, StartupRepository startupRepository) {
         this.startupRepository = startupRepository;
-        
+
         // Business Validation and Market Analysis
         promptTemplates.put("business_idea_validation", """
                 أنت محلل أعمال كبير ومستشار للشركات الناشئة. قم بتقييم فكرة العمل المقدمة وإعطاء تغذية راجعة بناءة.
@@ -230,24 +230,24 @@ public class AiService {
     public String chat(String template, String message, Integer startupId) {
         // Validate usage limits before processing
         validateAiUsage(startupId);
-        
+
         // Process AI request
         if (!promptTemplates.containsKey(template)) {
             throw new ApiException("Template not found");
         }
 
         String currentTemplate = promptTemplates.get(template);
-        
+
         String response = chatClient
                 .prompt()
                 .system(currentTemplate)
                 .user(message)
                 .call()
                 .content();
-        
+
         // Increment usage count after successful response
         incrementAiUsage(startupId);
-        
+
         return response;
     }
 
@@ -256,7 +256,7 @@ public class AiService {
         if (startup == null) {
             throw new ApiException("Startup not found");
         }
-        
+
         if (startup.getDailyAiUsageCount() >= startup.getDailyAiLimit()) {
             throw new ApiException("Daily AI usage limit reached. Please try again tomorrow or upgrade your plan.");
         }
@@ -276,27 +276,27 @@ public class AiService {
     public void resetDailyAiUsage() {
         try {
             log.info("[AI Usage Scheduler] Starting daily AI usage reset...");
-            
+
             List<Startup> allStartups = startupRepository.findAll();
-            
+
             for (Startup startup : allStartups) {
                 try {
                     // Reset daily usage count
                     startup.setDailyAiUsageCount(0);
-                    
+
                     // Daily limits are already set correctly when subscribing/renewing
                     // No need to change them here - just reset the counter
-                    
+
                     startupRepository.save(startup);
-                    
+
                     log.debug("[AI Usage Scheduler] Reset AI usage for startup ID: {}", startup.getId());
                 } catch (Exception e) {
                     // Continue with other startups even if one fails
-                    log.error("[AI Usage Scheduler] Failed to reset AI usage for startup ID {}: {}", 
-                        startup.getId(), e.getMessage());
+                    log.error("[AI Usage Scheduler] Failed to reset AI usage for startup ID {}: {}",
+                            startup.getId(), e.getMessage());
                 }
             }
-            
+
             log.info("[AI Usage Scheduler] Daily AI usage reset completed for {} startups", allStartups.size());
         } catch (Exception e) {
             log.error("[AI Usage Scheduler] Daily AI usage reset job failed: {}", e.getMessage());

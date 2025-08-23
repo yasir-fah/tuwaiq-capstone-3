@@ -2,7 +2,6 @@ package com.fkhrayef.capstone3.Controller;
 
 import com.fkhrayef.capstone3.Api.ApiResponse;
 import com.fkhrayef.capstone3.DTOin.FreelancerDTO;
-import com.fkhrayef.capstone3.Model.Freelancer;
 import com.fkhrayef.capstone3.Service.FreelancerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,7 @@ public class FreelancerController {
 
     @GetMapping("/get/freelance/{freelance_id}/request/status/{status}")
     public ResponseEntity<?> getAllFreelancerProjectByStatus(@PathVariable Integer freelance_id,
-                                                             @PathVariable String status){
-        return ResponseEntity.status(200).body(freelancerService.getAllFreelancerProjectByStatus(freelance_id,status));
+                                                             @PathVariable String status) {
+        return ResponseEntity.status(200).body(freelancerService.getAllFreelancerProjectByStatus(freelance_id, status));
     }
 }

@@ -1,7 +1,6 @@
 package com.fkhrayef.capstone3.Repository;
 
 import com.fkhrayef.capstone3.Model.FreelancerProject;
-import com.fkhrayef.capstone3.Model.Startup;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface FreelancerProjectRepository extends JpaRepository<FreelancerProject,Integer> {
+public interface FreelancerProjectRepository extends JpaRepository<FreelancerProject, Integer> {
 
     @Query("select p from FreelancerProject p where p.startup.id=:startupId")
     List<FreelancerProject> giveMeFreelancerProjectByStartupId(Integer startupId);
@@ -19,5 +18,5 @@ public interface FreelancerProjectRepository extends JpaRepository<FreelancerPro
     FreelancerProject findFreelancerProjectById(Integer id);
 
     @Query("select p from FreelancerProject  p where p.freelancer.id=:freelancerId and p.status=:status")
-   List<FreelancerProject> giveMeFreelancerProjectByFreelancerIdAndStatus(Integer freelancerId,String status);
+    List<FreelancerProject> giveMeFreelancerProjectByFreelancerIdAndStatus(Integer freelancerId, String status);
 }

@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface SubscriptionRepository extends JpaRepository<Subscription, Integer> {
-    
+
     Subscription findSubscriptionById(Integer id);
 
     @Query("SELECT s FROM Subscription s WHERE s.status = 'active' AND s.endDate <= ?1")

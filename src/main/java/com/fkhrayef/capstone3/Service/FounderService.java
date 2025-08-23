@@ -19,7 +19,7 @@ public class FounderService {
         return founderRepository.findAll();
     }
 
-    public void addFounder (FounderDTO founderDTO) {
+    public void addFounder(FounderDTO founderDTO) {
         Founder founder = new Founder();
         founder.setName(founderDTO.getName());
         founder.setEmail(founderDTO.getEmail());
@@ -35,7 +35,7 @@ public class FounderService {
         if (founder == null) {
             throw new ApiException("Founder not found with id: " + id);
         }
-        
+
         founder.setName(founderDTO.getName());
         founder.setEmail(founderDTO.getEmail());
         founder.setPhone(founderDTO.getPhone());

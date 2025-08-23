@@ -17,10 +17,10 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Check( constraints = "hourly_rate >= 0 and " +
-                      "LENGTH(name) >= 3 and " +
-                      "LENGTH(email) >= 3 and " +
-                      "total_earnings >= 0")
+@Check(constraints = "hourly_rate >= 0 and " +
+        "LENGTH(name) >= 3 and " +
+        "LENGTH(email) >= 3 and " +
+        "total_earnings >= 0")
 public class Advisor {
 
     @Id

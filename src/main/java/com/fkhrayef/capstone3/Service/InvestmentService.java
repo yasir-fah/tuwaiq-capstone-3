@@ -98,27 +98,25 @@ public class InvestmentService {
 
     public void createContract(Investment investment, String exchange) throws ApiException {
         if (!investment.getIsRecurring()) {
-            ContractDTO contractDTO = new ContractDTO(investment.getEffectiveDate(), investment.getInvestor().getName(), investment.getStartup().getName(), investment.getInvestment_amount(), investment.getPaymentMethod(), investment.getMinimumInvestmentPeriod(), exchange,null,null);
+            ContractDTO contractDTO = new ContractDTO(investment.getEffectiveDate(), investment.getInvestor().getName(), investment.getStartup().getName(), investment.getInvestment_amount(), investment.getPaymentMethod(), investment.getMinimumInvestmentPeriod(), exchange, null, null);
             fileService.createContract(contractDTO, "one_time_basis");
-        }
-        else {
-            ContractDTO contractDTO = new ContractDTO(investment.getEffectiveDate(), investment.getInvestor().getName(), investment.getStartup().getName(), investment.getInvestment_amount(), investment.getPaymentMethod(), investment.getMinimumInvestmentPeriod(), exchange,investment.getRecurringYears(),investment.getRecurringAmount());
+        } else {
+            ContractDTO contractDTO = new ContractDTO(investment.getEffectiveDate(), investment.getInvestor().getName(), investment.getStartup().getName(), investment.getInvestment_amount(), investment.getPaymentMethod(), investment.getMinimumInvestmentPeriod(), exchange, investment.getRecurringYears(), investment.getRecurringAmount());
             fileService.createContract(contractDTO, "recurring_basis");
         }
     }
 
-    public byte[] viewContract(Integer investment_id){
+    public byte[] viewContract(Integer investment_id) {
         Investment investment = investmentRepository.findInvestmentById(investment_id);
-        if (investment == null){
+        if (investment == null) {
             throw new ApiException("Investment not found");
         }
-        if (investment.getIsRecurring()){
-            return s3Service.downloadFile("recurring_basis" +"_"+investment.getStartup().getName().trim().replaceAll("\\s+", "_")
-                                   +"_"+investment.getInvestor().getName().trim().replaceAll("\\s+", "_")+".pdf");
-        }
-        else {
-            return s3Service.downloadFile("one_time_basis" +"_"+investment.getStartup().getName().trim().replaceAll("\\s+", "_")
-                                   +"_"+investment.getInvestor().getName().trim().replaceAll("\\s+", "_")+".pdf");
+        if (investment.getIsRecurring()) {
+            return s3Service.downloadFile("recurring_basis" + "_" + investment.getStartup().getName().trim().replaceAll("\\s+", "_")
+                    + "_" + investment.getInvestor().getName().trim().replaceAll("\\s+", "_") + ".pdf");
+        } else {
+            return s3Service.downloadFile("one_time_basis" + "_" + investment.getStartup().getName().trim().replaceAll("\\s+", "_")
+                    + "_" + investment.getInvestor().getName().trim().replaceAll("\\s+", "_") + ".pdf");
         }
     }
 

@@ -25,7 +25,7 @@ public class FreelancerDTO {
     private String phone;
 
     //todo add pattern underneath:
-    @NotEmpty(message ="specialization can't be empty")
+    @NotEmpty(message = "specialization can't be empty")
     private String specialization;
 
     @NotNull(message = "hourly rate can't be empty")

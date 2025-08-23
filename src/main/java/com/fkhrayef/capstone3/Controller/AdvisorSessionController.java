@@ -119,5 +119,9 @@ public class AdvisorSessionController {
         return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
     }
 
+    @GetMapping("/get/status/{status}/advisor/{advisorId}")
+    public ResponseEntity<?> getByStatusAndAdvisor(@PathVariable String status, @PathVariable Integer advisorId){
+        return ResponseEntity.status(200).body(advisorSessionService.getByStatusAndAdvisor(status, advisorId));
+    }
 
 }
