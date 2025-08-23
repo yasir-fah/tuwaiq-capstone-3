@@ -1,20 +1,27 @@
 package com.fkhrayef.capstone3.Service;
 
 import com.fkhrayef.capstone3.Api.ApiException;
+import com.fkhrayef.capstone3.Model.Startup;
+import com.fkhrayef.capstone3.Repository.StartupRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.List;
 
 @Service
-// todo: you need to define the API KEY in the environment variables first!!
+@Slf4j
 public class AiService {
 
     private final HashMap<String, String> promptTemplates = new HashMap<>();
     private final ChatClient chatClient;
+    private final StartupRepository startupRepository;
 
-    public AiService(ChatClient.Builder chatClientBuilder) {
-
+    public AiService(ChatClient.Builder chatClientBuilder, StartupRepository startupRepository) {
+        this.startupRepository = startupRepository;
+        
         // Business Validation and Market Analysis
         promptTemplates.put("business_idea_validation", """
                 أنت محلل أعمال كبير ومستشار للشركات الناشئة. قم بتقييم فكرة العمل المقدمة وإعطاء تغذية راجعة بناءة.
@@ -220,18 +227,79 @@ public class AiService {
         chatClient = chatClientBuilder.build();
     }
 
-    public String chat(String template, String message) {
+    public String chat(String template, String message, Integer startupId) {
+        // Validate usage limits before processing
+        validateAiUsage(startupId);
+        
+        // Process AI request
         if (!promptTemplates.containsKey(template)) {
             throw new ApiException("Template not found");
         }
 
         String currentTemplate = promptTemplates.get(template);
         
-        return chatClient
+        String response = chatClient
                 .prompt()
                 .system(currentTemplate)
                 .user(message)
                 .call()
                 .content();
+        
+        // Increment usage count after successful response
+        incrementAiUsage(startupId);
+        
+        return response;
+    }
+
+    private void validateAiUsage(Integer startupId) {
+        Startup startup = startupRepository.findStartupById(startupId);
+        if (startup == null) {
+            throw new ApiException("Startup not found");
+        }
+        
+        if (startup.getDailyAiUsageCount() >= startup.getDailyAiLimit()) {
+            throw new ApiException("Daily AI usage limit reached. Please try again tomorrow or upgrade your plan.");
+        }
+    }
+
+    private void incrementAiUsage(Integer startupId) {
+        Startup startup = startupRepository.findStartupById(startupId);
+        startup.setDailyAiUsageCount(startup.getDailyAiUsageCount() + 1);
+        startupRepository.save(startup);
+    }
+
+    /**
+     * Reset daily AI usage count for all startups
+     * Runs every minute for testing (change to "0 0 0 * * *" for production)
+     */
+    @Scheduled(cron = "0 * * * * *") // Every minute for testing
+    public void resetDailyAiUsage() {
+        try {
+            log.info("[AI Usage Scheduler] Starting daily AI usage reset...");
+            
+            List<Startup> allStartups = startupRepository.findAll();
+            
+            for (Startup startup : allStartups) {
+                try {
+                    // Reset daily usage count
+                    startup.setDailyAiUsageCount(0);
+                    
+                    // Daily limits are already set correctly when subscribing/renewing
+                    // No need to change them here - just reset the counter
+                    
+                    startupRepository.save(startup);
+                    
+                    log.debug("[AI Usage Scheduler] Reset AI usage for startup ID: {}", startup.getId());
+                } catch (Exception e) {
+                    // Continue with other startups even if one fails
+                    log.error("[AI Usage Scheduler] Failed to reset AI usage for startup ID {}: {}", 
+                        startup.getId(), e.getMessage());
+                }
+            }
+            
+            log.info("[AI Usage Scheduler] Daily AI usage reset completed for {} startups", allStartups.size());
+        } catch (Exception e) {
+            log.error("[AI Usage Scheduler] Daily AI usage reset job failed: {}", e.getMessage());
+        }
     }
 }

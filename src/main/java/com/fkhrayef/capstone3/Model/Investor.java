@@ -25,9 +25,6 @@ public class Investor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // todo (OneToMany relations with Investment.java)
-    //private List<Investment> investments
-
     @NotEmpty(message = "name can't be empty")
     @Size(min = 4, max = 25, message = "name length should be between 4-25 ")
     @Column(columnDefinition = "varchar(25) not null")

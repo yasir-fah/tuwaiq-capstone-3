@@ -33,10 +33,7 @@ public class Founder {
     private Double equityPercentage;
 
     @Column(columnDefinition = "BOOLEAN DEFAULT false")
-    private Boolean hasStartup; // TODO start of as false, when he creates a startup or joins one it becomes true
-
-    @Column(columnDefinition = "INTEGER DEFAULT 0")
-    private Integer aiUsageCount; // TODO should be reset everyday (cron job)
+    private Boolean hasStartup;
 
     // relations
     @ManyToOne

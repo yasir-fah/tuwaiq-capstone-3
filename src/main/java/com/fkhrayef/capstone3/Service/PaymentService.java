@@ -63,10 +63,6 @@ public class PaymentService {
     private static final Double ENTERPRISE_MONTHLY_PRICE = 299.0;
     private static final Double ENTERPRISE_YEARLY_PRICE = 2990.0; // 10 months price
     
-    // AI limits per plan
-    private static final Integer PRO_AI_LIMIT = 1000; // 1000 AI requests per month
-    private static final Integer ENTERPRISE_AI_LIMIT = 10000; // 10000 AI requests per month
-    
     
     public MoyasarPaymentResponseDTO processPayment(PaymentRequest paymentRequest) {
 
@@ -402,9 +398,15 @@ public class PaymentService {
             
             // Set AI limits based on plan
             if (planType.equals("pro")) {
-                subscription.setAiLimit(PRO_AI_LIMIT);
+                // Update startup's daily AI limit
+                Startup startup = payment.getStartup();
+                startup.setDailyAiLimit(50); // Pro daily limit
+                startupRepository.save(startup);
             } else {
-                subscription.setAiLimit(ENTERPRISE_AI_LIMIT);
+                // Update startup's daily AI limit
+                Startup startup = payment.getStartup();
+                startup.setDailyAiLimit(200); // Enterprise daily limit
+                startupRepository.save(startup);
             }
             
             subscription.setPrice(payment.getAmount());
@@ -425,8 +427,7 @@ public class PaymentService {
                             "• الدورة: " + billingCycle + "\n" +
                             "• المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
                             "• تاريخ البداية: " + subscription.getStartDate().toLocalDate() + "\n" +
-                            "• تاريخ الانتهاء: " + subscription.getEndDate().toLocalDate() + "\n" +
-                            "• حد الطلبات الذكية: " + subscription.getAiLimit() + " طلب شهرياً\n\n" +
+                            "• تاريخ الانتهاء: " + subscription.getEndDate().toLocalDate() + "\n\n" +
                             "مرحباً بك في منصتنا! 🚀";
                     whatsappService.sendTextMessage(activationMessage, founderPhone);
                 }
@@ -520,6 +521,9 @@ public class PaymentService {
         // Since @OneToOne with @PrimaryKeyJoinColumn, we need to clear the reference
         // This prevents JPA from trying to maintain the relationship
         startup.setSubscription(null);
+        
+        // Reset startup to free tier daily limits
+        startup.setDailyAiLimit(10); // Reset to free tier
         startupRepository.save(startup);
         
         // Now we can safely delete the subscription
