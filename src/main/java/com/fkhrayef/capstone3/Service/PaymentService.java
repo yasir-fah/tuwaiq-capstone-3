@@ -43,10 +43,17 @@ public class PaymentService {
     @Value("${moyasar.webhook.secret}")
     private String webhookSecret;
 
+    @Value("${APP_BASE_URL:http://localhost:8080}")
+    private String baseUrl;
+
     // Simple hardcoded values
     private static final String MOYASAR_API_URL = "https://api.moyasar.com/v1";
-    private static final String CALLBACK_URL = "http://localhost:8080/api/v1/payments/callback";
     private static final String CURRENCY = "SAR";
+    
+    // Dynamic callback URL using environment variable
+    private String getCallbackUrl() {
+        return baseUrl + "/api/v1/payments/callback";
+    }
     
     // Helper method to resolve transaction URL from Moyasar response
     private String resolveTransactionUrl(MoyasarPaymentResponseDTO moyasarResponse) {
@@ -80,7 +87,7 @@ public class PaymentService {
                 paymentRequest.getYear(),
                 (int) (paymentRequest.getAmount() * 100), // convert to the smallest currency unit
                 paymentRequest.getCurrency(),
-                CALLBACK_URL
+                getCallbackUrl()
         );
 
         // set headers
