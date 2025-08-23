@@ -2,7 +2,6 @@ package com.fkhrayef.capstone3.Repository;
 
 import com.fkhrayef.capstone3.Model.AdvisorSession;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -17,4 +16,5 @@ public interface AdvisorSessionRepository extends JpaRepository<AdvisorSession,I
     AdvisorSession findAdvisorSessionById(Integer id);
 
     boolean existsByIdAndStatus(Integer id, String status);
+
 }

@@ -48,6 +48,12 @@ public class AdvisorSession {
     @Column(columnDefinition = "DECIMAL(10,2)")
     private Double sessionCost; // Calculated from advisor hourly rate × duration
 
+    @Column(columnDefinition = "VARCHAR(255)")
+    private String meeting_url;
+
+    @Column(columnDefinition = "VARCHAR(255)")
+    private String meeting_id;
+
     // relations
     @ManyToOne
     @JsonIgnore
