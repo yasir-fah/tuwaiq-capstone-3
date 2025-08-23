@@ -12,12 +12,19 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
     // Only the repositories we actually need
     private final PaymentRepository paymentRepository;
@@ -32,6 +39,9 @@ public class PaymentService {
 
     @Value("${moyasar.api.key}")
     private String apiKey;
+
+    @Value("${moyasar.webhook.secret}")
+    private String webhookSecret;
 
     // Simple hardcoded values
     private static final String MOYASAR_API_URL = "https://api.moyasar.com/v1";
@@ -342,12 +352,18 @@ public class PaymentService {
         // Handle different payment types
         if ("subscription".equals(payment.getPaymentType()) && ("paid".equals(newStatus) || "captured".equals(newStatus))) {
             createSubscriptionFromPayment(payment);
+            // Send payment completion notification to founder
+            sendPaymentCompletionNotification(payment, "subscription");
         } else if ("freelancer_project".equals(payment.getPaymentType()) && ("paid".equals(newStatus) || "captured".equals(newStatus))) {
             updateFreelancerBalance(payment);
             activateFreelancerProject(payment);
+            // Send payment completion notifications to both parties
+            sendPaymentCompletionNotification(payment, "freelancer_project");
         } else if ("advisor_session".equals(payment.getPaymentType()) && ("paid".equals(newStatus) || "captured".equals(newStatus))) {
             updateAdvisorBalance(payment);
             activateAdvisorSession(payment);
+            // Send payment completion notifications to both parties
+            sendPaymentCompletionNotification(payment, "advisor_session");
         }
     }
     
@@ -398,6 +414,25 @@ public class PaymentService {
             // Link payment to subscription
             payment.setSubscriptionId(startupId);
             paymentRepository.save(payment);
+            
+            // Send subscription activation notification to founder
+            try {
+                String founderPhone = resolveFounderPhone(payment.getStartup());
+                if (founderPhone != null) {
+                    String activationMessage = "🎉 تم تفعيل اشتراكك بنجاح\n\n" +
+                            "📋 تفاصيل الاشتراك:\n" +
+                            "• الخطة: " + planType + "\n" +
+                            "• الدورة: " + billingCycle + "\n" +
+                            "• المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
+                            "• تاريخ البداية: " + subscription.getStartDate().toLocalDate() + "\n" +
+                            "• تاريخ الانتهاء: " + subscription.getEndDate().toLocalDate() + "\n" +
+                            "• حد الطلبات الذكية: " + subscription.getAiLimit() + " طلب شهرياً\n\n" +
+                            "مرحباً بك في منصتنا! 🚀";
+                    whatsappService.sendTextMessage(activationMessage, founderPhone);
+                }
+            } catch (Exception ex) {
+                logger.error("Failed to send subscription activation notification: {}", ex.getMessage());
+            }
             
         } catch (Exception e) {
             throw new ApiException("Failed to create subscription from payment: " + e.getMessage());
@@ -477,6 +512,10 @@ public class PaymentService {
             throw new ApiException("Subscription is not active. Current status: " + subscription.getStatus());
         }
         
+        // Store subscription details for notification before deletion
+        String planType = subscription.getPlanType();
+        String billingCycle = subscription.getBillingCycle();
+        
         // Properly handle the bidirectional relationship
         // Since @OneToOne with @PrimaryKeyJoinColumn, we need to clear the reference
         // This prevents JPA from trying to maintain the relationship
@@ -489,6 +528,22 @@ public class PaymentService {
         // Verify the subscription was deleted
         if (subscriptionRepository.findSubscriptionById(startupId) != null) {
             throw new ApiException("Failed to delete subscription");
+        }
+        
+        // Send WhatsApp confirmation message to founder
+        try {
+            String founderPhone = resolveFounderPhone(startup);
+            if (founderPhone != null) {
+                String message = "✅ تم إلغاء اشتراكك بنجاح\n\n" +
+                        "📋 تفاصيل الاشتراك الملغي:\n" +
+                        "• الخطة: " + planType + "\n" +
+                        "• الدورة: " + billingCycle + "\n\n" +
+                        "يمكنك إعادة الاشتراك في أي وقت";
+                whatsappService.sendTextMessage(message, founderPhone);
+            }
+        } catch (Exception ex) {
+            // Log error but don't fail the main operation
+            logger.error("Failed to send WhatsApp cancellation confirmation: {}", ex.getMessage());
         }
     }
     
@@ -519,24 +574,26 @@ public class PaymentService {
     @Scheduled(cron = "0 * * * * *") // Every minute (for testing)
     public void handleSubscriptionRenewals() {
         try {
-            System.out.println("[Scheduler] Starting daily subscription renewal check...");
+            logger.info("[Scheduler] Starting daily subscription renewal check...");
             // Find all active subscriptions that are expiring today or have expired
             List<Subscription> expiringSubscriptions = subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
             
             for (Subscription subscription : expiringSubscriptions) {
                 try {
-                    System.out.println("[Scheduler] Processing renewal for startupId=" + (subscription.getStartup() != null ? subscription.getStartup().getId() : null) +
-                            ", plan=" + subscription.getPlanType() + ", cycle=" + subscription.getBillingCycle());
+                    logger.info("[Scheduler] Processing renewal for startupId={}, plan={}, cycle={}", 
+                        subscription.getStartup() != null ? subscription.getStartup().getId() : null,
+                        subscription.getPlanType(), 
+                        subscription.getBillingCycle());
                     processSubscriptionRenewal(subscription);
                 } catch (Exception e) {
                     // Continue with other subscriptions even if one fails
-                    System.out.println("[Scheduler] Failed to process renewal: " + e.getMessage());
+                    logger.error("[Scheduler] Failed to process renewal: {}", e.getMessage());
                 }
             }
-            System.out.println("[Scheduler] Renewal check completed.");
+            logger.info("[Scheduler] Renewal check completed.");
         } catch (Exception e) {
             // Renewal job failed, will retry tomorrow
-            System.out.println("[Scheduler] Renewal job failed: " + e.getMessage());
+            logger.error("[Scheduler] Renewal job failed: {}", e.getMessage());
         }
     }
     
@@ -552,17 +609,20 @@ public class PaymentService {
                 cancelSubscription(startup.getId());
             } catch (Exception ignored) {}
 
-            try {
-                String founderPhone = resolveFounderPhone(startup);
-                String message = "Your subscription was cancelled due to missing payment information. Please resubscribe to continue your plan.";
-                System.out.println("[Scheduler][WhatsApp] To: " + founderPhone + " | Message: " + message);
-                if (founderPhone != null) {
-                    whatsappService.sendTextMessage(message, founderPhone);
+                            try {
+                    String founderPhone = resolveFounderPhone(startup);
+                    String message = "🚫 تم إلغاء اشتراكك\n\n" +
+                            "السبب: معلومات الدفع غير متوفرة\n\n" +
+                            "للمتابعة، يرجى إعادة الاشتراك مع تحديث بيانات البطاقة\n\n" +
+                            "شكراً لك";
+                    logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, message);
+                    if (founderPhone != null) {
+                        whatsappService.sendTextMessage(message, founderPhone);
+                    }
+                    logger.info("[Scheduler] Subscription cancelled due to missing card data. Notified: {}", founderPhone);
+                } catch (Exception ex) {
+                    logger.error("[Scheduler] Failed to send WhatsApp cancel notification: {}", ex.getMessage());
                 }
-                System.out.println("[Scheduler] Subscription cancelled due to missing card data. Notified: " + founderPhone);
-            } catch (Exception ex) {
-                System.out.println("[Scheduler] Failed to send WhatsApp cancel notification: " + ex.getMessage());
-            }
             return;
         }
 
@@ -582,7 +642,7 @@ public class PaymentService {
             renewalRequest.setDescription("Auto-renewal: " + subscription.getPlanType() + " (" + subscription.getBillingCycle() + ")");
             renewalRequest.setCurrency("SAR");
 
-            System.out.println("[Scheduler] Attempting auto-renewal charge for startupId=" + (startup != null ? startup.getId() : null));
+            logger.info("[Scheduler] Attempting auto-renewal charge for startupId={}", startup.getId());
             MoyasarPaymentResponseDTO moyasarResponse = processPayment(renewalRequest);
 
             Payment renewalPayment = new Payment();
@@ -606,18 +666,23 @@ public class PaymentService {
             try {
                 String founderPhone = resolveFounderPhone(startup);
                 String paymentLink = resolveTransactionUrl(moyasarResponse);
-                String successMessage = "Your subscription renewal has been initiated. Complete payment: "
-                        + paymentLink + " | Status: " + renewalPayment.getStatus() + ", Amount: "
-                        + renewalPayment.getAmount() + " " + renewalPayment.getCurrency();
-                System.out.println("[Scheduler][WhatsApp] To: " + founderPhone + " | Message: " + successMessage);
+                String successMessage = "🔄 تم بدء تجديد اشتراكك\n\n" +
+                        "📋 تفاصيل التجديد:\n" +
+                        "• الخطة: " + subscription.getPlanType() + "\n" +
+                        "• الدورة: " + subscription.getBillingCycle() + "\n" +
+                        "• المبلغ: " + renewalPayment.getAmount() + " " + renewalPayment.getCurrency() + "\n" +
+                        "• الحالة: " + renewalPayment.getStatus() + "\n\n" +
+                        "🔗 رابط الدفع:\n" + paymentLink + "\n\n" +
+                        "يرجى إكمال الدفع لتفعيل اشتراكك";
+                logger.info("[Scheduler][WhatsApp] To: {} | Message: {}", founderPhone, successMessage);
                 if (founderPhone != null) {
                     whatsappService.sendTextMessage(successMessage, founderPhone);
                 }
             } catch (Exception ex) {
-                System.out.println("[Scheduler] Failed to send WhatsApp renewal notification: " + ex.getMessage());
+                logger.error("[Scheduler] Failed to send WhatsApp renewal notification: {}", ex.getMessage());
             }
         } catch (Exception e) {
-            System.out.println("[Scheduler] Auto-renewal charge failed: " + e.getMessage());
+            logger.error("[Scheduler] Auto-renewal charge failed: {}", e.getMessage());
         }
     }
 
@@ -632,9 +697,118 @@ public class PaymentService {
     }
     
     /**
+     * Send payment completion notifications to relevant parties
+     */
+    private void sendPaymentCompletionNotification(Payment payment, String paymentType) {
+        try {
+            Startup startup = payment.getStartup();
+            
+            // Notify founder
+            String founderPhone = resolveFounderPhone(startup);
+            if (founderPhone != null) {
+                String founderMessage = "✅ تم اكتمال الدفع بنجاح\n\n" +
+                        "📋 تفاصيل العملية:\n" +
+                        "• نوع الخدمة: " + getPaymentTypeInArabic(paymentType) + "\n" +
+                        "• المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
+                        "• الحالة: مكتمل\n\n" +
+                        "شكراً لك!";
+                whatsappService.sendTextMessage(founderMessage, founderPhone);
+            }
+            
+            // Notify service provider based on payment type
+              if ("freelancer_project".equals(paymentType) && payment.getFreelancerId() != null) {
+                  Freelancer freelancer = freelancerRepository.findFreelancerById(payment.getFreelancerId());
+                  if (freelancer != null && freelancer.getPhone() != null) {
+                      // Get project details for the message
+                      FreelancerProject project = null;
+                      if (payment.getFreelancerProjectId() != null) {
+                          project = freelancerProjectRepository.findFreelancerProjectById(payment.getFreelancerProjectId());
+                      }
+                      String projectName = project != null ? project.getProjectName() : "مشروع";
+                      
+                      String freelancerMessage = "💰 تم استلام الدفع\n" +
+                              "المشروع: " + projectName + "\n" +
+                              "المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
+                              "شكراً لك";
+                      whatsappService.sendTextMessage(freelancerMessage, freelancer.getPhone());
+                  }
+              } else if ("advisor_session".equals(paymentType) && payment.getAdvisorId() != null) {
+                  Advisor advisor = advisorRepository.findAdvisorById(payment.getAdvisorId());
+                  if (advisor != null && advisor.getPhone() != null) {
+                      // Get session details for the message
+                      AdvisorSession session = null;
+                      if (payment.getAdvisorSessionId() != null) {
+                          session = advisorSessionRepository.findAdvisorSessionById(payment.getAdvisorSessionId());
+                      }
+                      String sessionTitle = session != null && session.getTitle() != null ? session.getTitle() : "جلسة استشارية";
+                      
+                      String advisorMessage = "💰 تم استلام الدفع\n" +
+                              "الجلسة: " + sessionTitle + "\n" +
+                              "المبلغ: " + payment.getAmount() + " " + payment.getCurrency() + "\n" +
+                              "شكراً لك";
+                      whatsappService.sendTextMessage(advisorMessage, advisor.getPhone());
+                  }
+              }
+        } catch (Exception ex) {
+            logger.error("Failed to send payment completion notifications: {}", ex.getMessage());
+        }
+    }
+    
+    /**
+     * Get payment type in Arabic for notifications
+     */
+    private String getPaymentTypeInArabic(String paymentType) {
+        switch (paymentType) {
+            case "subscription":
+                return "الاشتراك";
+            case "freelancer_project":
+                return "مشروع مستقل";
+            case "advisor_session":
+                return "جلسة استشارية";
+            default:
+                return "خدمة";
+        }
+    }
+    
+    /**
      * Get all active subscriptions that are expiring soon (within 1 day)
      */
     public List<Subscription> getExpiringSubscriptions() {
         return subscriptionRepository.findActiveSubscriptionsExpiringSoon(LocalDateTime.now().plusDays(1));
+    }
+
+    /**
+     * Handle Moyasar webhook payload
+     */
+    public void handleWebhook(String payload) {
+        try {
+            // Parse the JSON payload
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode webhookData = mapper.readTree(payload);
+            
+            // Verify webhook secret token
+            String secretToken = webhookData.path("secret_token").asText();
+            if (!webhookSecret.equals(secretToken)) {
+                throw new ApiException("Invalid webhook secret token");
+            }
+            
+            // Extract payment information
+            String type = webhookData.path("type").asText();
+            
+            // Handle payment_paid events
+            if ("payment_paid".equals(type)) {
+                JsonNode paymentData = webhookData.path("data");
+                String paymentId = paymentData.path("id").asText();
+                String status = paymentData.path("status").asText();
+                
+                logger.info("[Webhook] Processing payment_paid: {} with status: {}", paymentId, status);
+                handlePaymentCompletion(paymentId, status);
+            } else {
+                logger.info("[Webhook] Ignoring non-payment_paid event: {}", type);
+            }
+            
+        } catch (Exception e) {
+            throw new ApiException("Failed to process webhook: " + e.getMessage());
+        }
     }
 }

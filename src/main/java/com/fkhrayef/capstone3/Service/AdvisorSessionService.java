@@ -9,9 +9,12 @@ import com.fkhrayef.capstone3.Repository.AdvisorRepository;
 import com.fkhrayef.capstone3.Repository.AdvisorSessionRepository;
 import com.fkhrayef.capstone3.Repository.PaymentRepository;
 import com.fkhrayef.capstone3.Repository.StartupRepository;
+import com.fkhrayef.capstone3.Service.WhatsappService;
 import lombok.RequiredArgsConstructor;
 import okhttp3.Response;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.nio.charset.StandardCharsets;
@@ -25,11 +28,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdvisorSessionService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AdvisorSessionService.class);
+
     private final AdvisorSessionRepository advisorSessionRepository;
     private final StartupRepository startupRepository;
     private final AdvisorRepository advisorRepository;
     private final WebexService webexService;
     private final FirefliesAiApiService firefliesAiApiService;
+    private final PaymentRepository paymentRepository;
+    private final WhatsappService whatsappService;
 
     ///  1- get sessions of one startup
     public List<AdvisorSession> getAllAdvisorSessionsFromStartup(Integer startupId) {
@@ -41,9 +48,6 @@ public class AdvisorSessionService {
         }
         return advisorSessionRepository.findAdvisorSessionByStartupId(startup.getId());
     }
-
-
-
 
     /// 2- startup create session targeting a specific advisor (single step)
     public void addAdvisorSessionByStartup(Integer startupId, Integer advisorId, AdvisorSessionDTO dto) {
@@ -77,11 +81,25 @@ public class AdvisorSessionService {
         advisorSession.setNotes(dto.getNotes());
         advisorSession.setStatus("pending");
 
-        // 5- link session with startup & advisor then save the session:
-        advisorSession.setStartup(startup);
-        advisorSession.setAdvisor(advisor);
-        advisorSessionRepository.save(advisorSession);
-    }
+       // 5- link session with startup & advisor then save the session:
+       advisorSession.setStartup(startup);
+       advisorSession.setAdvisor(advisor);
+       advisorSessionRepository.save(advisorSession);
+
+       // 6- Send WhatsApp notification to advisor about new request
+       try {
+           if (advisor.getPhone() != null) {
+               String message = "🔔 طلب جلسة استشارية جديد\n" +
+                       "الشركة: " + startup.getName() + "\n" +
+                       "الجلسة: " + dto.getTitle() + "\n" +
+                       "يرجى مراجعة الطلب والرد عليه";
+               whatsappService.sendTextMessage(message, advisor.getPhone());
+           }
+               } catch (Exception ex) {
+            // Log error but don't fail the main operation
+            logger.error("Failed to send WhatsApp notification: {}", ex.getMessage());
+        }
+   }
 
     /// 3- advisor accepts session:
     public void advisorAcceptAdvisorSession(Integer advisorId, Integer sessionId) {
@@ -253,7 +271,6 @@ public class AdvisorSessionService {
         session.setStartup(null);
 
         // 6- delete session
-        session.setStatus("cancelled");
         advisorSessionRepository.delete(session);
     }
 
@@ -285,7 +302,6 @@ public class AdvisorSessionService {
         } catch (Exception e) {
             throw new ApiException("Failed to start meeting");
         }
-        session.setStatus("scheduled");
         advisorSessionRepository.save(session);
 
     }
@@ -328,7 +344,6 @@ public class AdvisorSessionService {
         webexService.deleteMeeting(session.getMeeting_id());
         session.setMeeting_id(null);
         session.setMeeting_url(null);
-        session.setStatus("confirmed");
         advisorSessionRepository.save(session);
     }
 

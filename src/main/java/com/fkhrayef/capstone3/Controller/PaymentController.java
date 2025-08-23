@@ -34,12 +34,8 @@ public class PaymentController {
     public ResponseEntity<?> payForProject(@PathVariable Integer startupId,
                                           @PathVariable Integer projectId,
                                           @Valid @RequestBody PaymentRequest paymentRequest) {
-        try {
-            PaymentCreationResponseDTO response = paymentService.createFreelancerProjectPayment(startupId, projectId, paymentRequest);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse("Payment failed: " + e.getMessage()));
-        }
+        PaymentCreationResponseDTO response = paymentService.createFreelancerProjectPayment(startupId, projectId, paymentRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     // Pay for advisor session
@@ -47,12 +43,8 @@ public class PaymentController {
     public ResponseEntity<?> payForSession(@PathVariable Integer startupId,
                                           @PathVariable Integer sessionId,
                                           @Valid @RequestBody PaymentRequest paymentRequest) {
-        try {
-            PaymentCreationResponseDTO response = paymentService.createAdvisorSessionPayment(startupId, sessionId, paymentRequest);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse("Payment failed: " + e.getMessage()));
-        }
+        PaymentCreationResponseDTO response = paymentService.createAdvisorSessionPayment(startupId, sessionId, paymentRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     // Pay for subscription
@@ -61,74 +53,63 @@ public class PaymentController {
                                                @PathVariable String planType,
                                                @PathVariable String billingCycle,
                                                @Valid @RequestBody PaymentRequest paymentRequest) {
-        try {
-            PaymentCreationResponseDTO response = paymentService.createSubscriptionPayment(startupId, planType, billingCycle, paymentRequest);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse("Payment failed: " + e.getMessage()));
-        }
+        PaymentCreationResponseDTO response = paymentService.createSubscriptionPayment(startupId, planType, billingCycle, paymentRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    // Moyasar callback endpoint
+    // Moyasar callback endpoint (just shows status)
     @GetMapping("/callback")
     public ResponseEntity<?> handleCallback(@RequestParam String id, 
                                            @RequestParam String status, 
                                            @RequestParam(required = false) String message) {
-        try {
-            // Handle payment completion (creates subscription, updates balances, etc.)
-            paymentService.handlePaymentCompletion(id, status);
-            
-            // Return callback confirmation
-            return ResponseEntity.ok(new ApiResponse(
-                "Payment " + status + " processed successfully. Moyasar ID: " + id + 
-                (message != null ? ". Message: " + message : "")
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse("Callback processing failed: " + e.getMessage()));
-        }
+        // NO business logic - just return a message
+        return ResponseEntity.ok(new ApiResponse(
+            "Payment " + status + " processed. Moyasar ID: " + id + 
+            (message != null ? ". Message: " + message : "")
+        ));
+    }
+
+    // Moyasar webhook endpoint (handles business logic)
+    @PostMapping("/webhook")
+    public ResponseEntity<?> handleWebhook(@RequestBody String payload) {
+        // Process the webhook payload (includes secret token validation)
+        paymentService.handleWebhook(payload);
+        
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse("Webhook processed successfully"));
+    }
+
+    // Simple payment status check endpoint (for frontend use)
+    @GetMapping("/status/{paymentId}")
+    public ResponseEntity<?> getPaymentStatus(@PathVariable String paymentId) {
+        String status = paymentService.getPaymentStatus(paymentId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse("Payment status: " + status));
     }
 
     // Get payment by ID
     @GetMapping("/payment/{paymentId}")
     public ResponseEntity<?> getPayment(@PathVariable Integer paymentId) {
-        try {
-            Payment payment = paymentService.getPaymentById(paymentId);
-            return ResponseEntity.ok(payment);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        Payment payment = paymentService.getPaymentById(paymentId);
+        return ResponseEntity.status(HttpStatus.OK).body(payment);
     }
     
     // Cancel subscription
     @PostMapping("/subscription/{startupId}/cancel")
     public ResponseEntity<?> cancelSubscription(@PathVariable Integer startupId) {
-        try {
-            paymentService.cancelSubscription(startupId);
-            return ResponseEntity.ok(new ApiResponse("Subscription cancelled successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse("Failed to cancel subscription: " + e.getMessage()));
-        }
+        paymentService.cancelSubscription(startupId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse("Subscription cancelled successfully"));
     }
     
     // Get subscription status
     @GetMapping("/subscription/{startupId}/status")
     public ResponseEntity<?> getSubscriptionStatus(@PathVariable Integer startupId) {
-        try {
-            Subscription subscription = paymentService.getSubscriptionStatus(startupId);
-            return ResponseEntity.ok(subscription);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        Subscription subscription = paymentService.getSubscriptionStatus(startupId);
+        return ResponseEntity.status(HttpStatus.OK).body(subscription);
     }
     
     // Get expiring subscriptions (admin endpoint)
     @GetMapping("/subscription/expiring")
     public ResponseEntity<?> getExpiringSubscriptions() {
-        try {
-            List<Subscription> expiringSubscriptions = paymentService.getExpiringSubscriptions();
-            return ResponseEntity.ok(expiringSubscriptions);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse("Failed to get expiring subscriptions: " + e.getMessage()));
-        }
+        List<Subscription> expiringSubscriptions = paymentService.getExpiringSubscriptions();
+        return ResponseEntity.status(HttpStatus.OK).body(expiringSubscriptions);
     }
 }
