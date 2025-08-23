@@ -33,7 +33,7 @@ public class WebexService {
         this.objectMapper = new ObjectMapper();
     }
 
-    public void startMeeting(String title, LocalDateTime meetingDateTime, Integer durationMinutes, List<String> inviteEmails) throws ApiException {
+    public Response startMeeting(String title, LocalDateTime meetingDateTime, Integer durationMinutes, List<String> inviteEmails) throws ApiException {
         try {
             ZonedDateTime start = meetingDateTime.atZone(ZoneId.of("Asia/Riyadh"));
             ZonedDateTime end = start.plusMinutes(durationMinutes);
@@ -47,9 +47,9 @@ public class WebexService {
             aiInvitee.put("email", "fred@fireflies.ai");
             invitees.add(aiInvitee);
 
-            for (int i = 0; i < inviteEmails.size(); i++) {
+            for (String inviteEmail : inviteEmails) {
                 Map<String, String> invitee = new HashMap<>();
-                invitee.put("email", inviteEmails.get(i));
+                invitee.put("email", inviteEmail);
                 invitees.add(invitee);
             }
 
@@ -80,8 +80,24 @@ public class WebexService {
                 String responseBody = response.body() != null ? response.body().string() : "No response body";
                 throw new ApiException("Meeting creation failed: " + response.code() + " - " + responseBody);
             }
+
+            return response;
         } catch (Exception e) {
             throw new ApiException("Unexpected error while starting meeting: " + e.getMessage());
+        }
+    }
+
+    public void deleteMeeting(String meetingId) throws ApiException {
+        try {
+            Request request = new Request.Builder()
+                    .url("https://webexapis.com/v1/meetings/" + meetingId)
+                    .addHeader("Authorization", "Bearer " + webexKey)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Accept", "application/json")
+                    .delete()
+                    .build();
+        } catch (Exception e) {
+            throw new ApiException("Unexpected error while deleting meeting");
         }
     }
 }

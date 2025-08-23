@@ -31,12 +31,7 @@ public class FirefliesAiApiService {
         String query = """
         query Transcript($transcriptId: String!) {
           transcript(id: $transcriptId) {
-            summary {
-              action_items
-              overview
-              short_summary
-              keywords
-              topics_discussed
+            summary {   short_summary
             }
           }
         }
@@ -77,15 +72,109 @@ public class FirefliesAiApiService {
                 .block();
     }
 
+    public String getBulletGist(String link) {
+        // First find the transcript ID, then get the bullet_gist - blocking approach
+        String transcriptId = findTranscriptIdByMeetingLink(link);
+
+        String query = """
+        query Transcript($transcriptId: String!) {
+          transcript(id: $transcriptId) {
+            summary {   bullet_gist
+            }
+          }
+        }
+        """;
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("query", query);
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("transcriptId", transcriptId);
+        requestBody.put("variables", variables);
+
+        return webClient.post()
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(jsonResponse -> {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode root = mapper.readTree(jsonResponse);
+
+
+                        JsonNode topicsNode = root.path("data")
+                                .path("transcript")
+                                .path("summary")
+                                .path("bullet_gist");
 
 
 
+                        return topicsNode.asText();
+                    } catch (Exception e) {
+
+                        throw new ApiException("Error parsing bullet_gist response");
+                    }
+                })
+                .block();
+    }
+
+
+    public String getActionItems(String link) {
+
+        // First find the transcript ID, then get the topics_discussed - blocking approach
+        String transcriptId = findTranscriptIdByMeetingLink(link);
+
+        String query = """
+        query Transcript($transcriptId: String!) {
+          transcript(id: $transcriptId) {
+            summary {   action_items
+            }
+          }
+        }
+        """;
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("query", query);
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("transcriptId", transcriptId);
+        requestBody.put("variables", variables);
+
+        return webClient.post()
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(jsonResponse -> {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode root = mapper.readTree(jsonResponse);
+
+
+                        JsonNode actionItemsNode = root.path("data")
+                                .path("transcript")
+                                .path("summary")
+                                .path("action_items");
+
+
+
+                        return actionItemsNode.asText();
+                    } catch (Exception e) {
+
+                        throw new ApiException("Error parsing action_items response");
+                    }
+                })
+                .block();
+    }
     public String findTranscriptIdByMeetingLink(String targetMeetingLink) {
         String query = """
         query {
           transcripts {
-            id
             meeting_link
+            id
             title
           }
         }
@@ -124,6 +213,47 @@ public class FirefliesAiApiService {
                     } catch (Exception e) {
 
                         throw new ApiException(e.getMessage());
+                    }
+                })
+                .block();
+    }
+
+    public String getAudioUrl(String targetMeetingLink) {
+        String query = """
+                query Transcript($transcriptId: String!) {
+                    transcript(id: $transcriptId) {
+                      audio_url
+                    }
+                  }
+        """;
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("query", query);
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("transcriptId", findTranscriptIdByMeetingLink(targetMeetingLink));
+        requestBody.put("variables", variables);
+
+        return webClient.post()
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(jsonResponse -> {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode root = mapper.readTree(jsonResponse);
+
+
+                        JsonNode summaryNode = root.path("data")
+                                .path("transcript")
+                                .path("audio_url");
+
+
+
+                        return summaryNode.asText();
+                    } catch (Exception e) {
+
+                        throw new ApiException("Error parsing summary response");
                     }
                 })
                 .block();
