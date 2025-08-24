@@ -96,3 +96,6 @@ StartHub is a digital platform designed to empower Saudi entrepreneurs and early
 <img width="536" height="872" alt="image" src="https://github.com/user-attachments/assets/7ccbb296-2d5e-47c3-b284-b4d4906c614a" />
 
 
+---
+## presentation file
+📄 [Capstone Presentation (PDF)](./Capstone-3.pdf)
